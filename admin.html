@@ -13,7 +13,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp, query, orderBy }
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc,getDoc, updateDoc, serverTimestamp, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   
@@ -243,11 +243,52 @@ const firebaseConfig = {
     }
   };
 
-  // ── Edit (stub — opens compose tab pre-filled) ──
-  window.editArticle = (id) => {
-    toast('Edit feature: load article by ID into the compose form.', 'info');
-    // Full edit implementation: fetch doc by id, populate form fields, change publishBtn to "Update"
-  };
+  let editingId = null;
+window.editArticle = async (id) => {
+  try {
+    const snap = await getDoc(doc(db, 'articles', id));
+    if (!snap.exists()) { toast('Article not found.', 'error'); return; }
+    const a = snap.data();
+    editingId = id;
+    document.getElementById('artTitle').value    = a.title    || '';
+    document.getElementById('artExcerpt').value  = a.excerpt  || '';
+    document.getElementById('artBody').value     = a.body     || '';
+    document.getElementById('artAuthor').value   = a.author   || '';
+    document.getElementById('artCategory').value = a.category || '';
+    document.getElementById('artStatus').value   = a.status   || 'published';
+    document.getElementById('artImageURL').value = a.imageURL || '';
+    document.getElementById('artBreaking').checked = a.breaking || false;
+    document.getElementById('artFeatured').checked = a.featured || false;
+    if (a.imageURL) {
+      document.getElementById('imagePreview').src = a.imageURL;
+      document.getElementById('imagePreview').style.display = 'block';
+      document.getElementById('imagePlaceholder').style.display = 'none';
+    }
+    updateWordCount();
+    const btn = document.getElementById('publishBtn');
+    btn.textContent = '💾 Update Article';
+    btn.style.background = '#1e40af';
+    if (!document.getElementById('cancelEditBtn')) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.id = 'cancelEditBtn';
+      cancelBtn.className = 'btn-draft';
+      cancelBtn.textContent = '✕ Cancel Edit';
+      cancelBtn.onclick = () => {
+        editingId = null;
+        resetForm();
+        btn.textContent = '🚀 Publish Article';
+        btn.style.background = '';
+        cancelBtn.remove();
+        toast('Edit cancelled.', 'info');
+      };
+      btn.parentNode.appendChild(cancelBtn);
+    }
+    switchTab('compose');
+    toast('Article loaded. Make changes and click Update.', 'info');
+  } catch(e) {
+    toast('Error loading article: ' + e.message, 'error');
+  }
+};
 
   // ── Word count ──
   window.updateWordCount = () => {
