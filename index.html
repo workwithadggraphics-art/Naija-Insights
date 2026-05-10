@@ -12,7 +12,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, query, orderBy, limit, where, doc, updateDoc, increment }
+  import { getFirestore, collection, getDocs, query, orderBy, limit, doc, updateDoc, increment }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   
@@ -54,25 +54,26 @@ const firebaseConfig = {
   async function loadAll() {
     try {
       const q = query(
-        collection(db, 'articles'),
-        where('status', '==', 'published'),
-        orderBy('createdAt', 'desc'),
-        limit(30)
-      );
-      const snap = await getDocs(q);
-      const articles = [];
-      snap.forEach(d => articles.push({ id: d.id, ...d.data() }));
+  collection(db, 'articles'),
+  orderBy('createdAt', 'desc'),
+  limit(30)
+);
+const snap = await getDocs(q);
+const articles = [];
+snap.forEach(d => articles.push({ id: d.id, ...d.data() }));
 
-      if (articles.length === 0) {
-        showEmptyState();
-        return;
-      }
+const published = articles.filter(a => a.status === 'published');
 
-      buildTicker(articles.filter(a => a.breaking));
-      buildHero(articles);
-      buildLatestGrid(articles.slice(0, 8));
-      buildMoreStories(articles.slice(4, 10));
-      buildTrending(articles);
+if (published.length === 0) {
+  showEmptyState();
+  return;
+}
+
+buildTicker(published.filter(a => a.breaking));
+buildHero(published);
+buildLatestGrid(published.slice(0, 8));
+buildMoreStories(published.slice(4, 10));
+buildTrending(published);
 
     } catch(e) {
       console.error('Firebase error:', e);
