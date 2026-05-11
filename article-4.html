@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loading… — Naija Insights</title>
+<meta name="description" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit, where, updateDoc, increment }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ─── FIREBASE CONFIG ───
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCoc6cZeyK-QnRigxT9KSU9fk5kFAyCJc",
+    authDomain: "naija-insights.firebaseapp.com",
+    projectId: "naija-insights",
+    storageBucket: "naija-insights.firebasestorage.app",
+    messagingSenderId: "620443477759",
+    appId: "1:620443477759:web:5ff1a76f4e0392532bceca"
+  };
+
+  // Use unique app name to avoid conflicts with admin.html
+  const app = initializeApp(firebaseConfig, 'article-app');
+  const db  = getFirestore(app);
+
+  // ── Utilities ──
+  const catEmoji = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️' };
+  const catClass = { Politics:'cat-politics', Entertainment:'cat-entertainment', Health:'cat-health', Education:'cat-education', Security:'cat-security' };
+
+  function timeAgo(ts) {
+    if (!ts) return '';
+    const secs = Math.floor((Date.now() - ts.seconds * 1000) / 1000);
+    if (secs < 60) return 'Just now';
+    if (secs < 3600) return Math.floor(secs/60) + ' minutes ago';
+    if (secs < 86400) return Math.floor(secs/3600) + ' hours ago';
+    return new Date(ts.seconds * 1000).toLocaleDateString('en-NG', { day:'numeric', month:'long', year:'numeric' });
+  }
+
+  function fullDate(ts) {
+    if (!ts) return '';
+    return new Date(ts.seconds * 1000).toLocaleDateString('en-NG', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  }
+
+  function cardBg(cat) {
+    const map = { Politics:'linear-gradient(135deg,#fee2e2,#fca5a5)', Entertainment:'linear-gradient(135deg,#fef3c7,#fde68a)', Health:'linear-gradient(135deg,#d1fae5,#6ee7b7)', Education:'linear-gradient(135deg,#dbeafe,#93c5fd)', Security:'linear-gradient(135deg,#f3e8ff,#c4b5fd)' };
+    return map[cat] || 'linear-gradient(135deg,#f1f5f9,#e2e8f0)';
+  }
+
+  // ── Get article ID from URL ──
+  const params = new URLSearchParams(location.search);
+  const articleId = params.get('id');
+
+  if (!articleId) {
+    location.href = 'index.html';
+  }
+
+  // ── Load article ──
+  async function loadArticle() {
+    try {
+      const docRef = doc(db, 'articles', articleId);
+      const snap = await getDoc(docRef);
+
+      if (!snap.exists()) {
+        document.getElementById('articleSkeleton').style.display = 'none';
+        document.getElementById('notFound').style.display = 'flex';
+        document.querySelector('#notFound p').textContent = 'Article ID "' + articleId + '" not found in database.';
+        return;
+      }
+
+      const a = { id: snap.id, ...snap.data() };
+
+      // Increment views
+      updateDoc(docRef, { views: increment(1) }).catch(() => {});
+
+      // Page title & meta
+      document.title = `${a.title} — Naija Insights`;
+      document.querySelector('meta[name="description"]').setAttribute('content', a.excerpt || a.title);
+
+      // Hero image / cover
+      const coverEl = document.getElementById('articleCover');
+      if (a.imageURL) {
+        coverEl.innerHTML = `<img src="${a.imageURL}" alt="${a.title}">`;
+        coverEl.className = 'article-cover has-image';
+      } else {
+        coverEl.innerHTML = `<span class="cover-emoji">${catEmoji[a.category] || '📰'}</span>`;
+        coverEl.style.background = cardBg(a.category);
+      }
+
+      // Badges
+      const badgeEl = document.getElementById('articleBadge');
+      badgeEl.textContent = a.category;
+      badgeEl.className = `category-badge ${catClass[a.category] || 'cat-general'}`;
+
+      if (a.breaking) {
+        document.getElementById('breakingBadge').style.display = 'inline-flex';
+      }
+
+      // Title, excerpt, meta — safe null checks
+      const setText = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+      setText('articleTitle', a.title);
+      setText('articleExcerpt', a.excerpt || '');
+      setText('articleAuthor', a.author);
+      setText('articleDate', fullDate(a.createdAt));
+      setText('articleReadTime', a.readTime || '');
+      setText('articleViews', ((a.views || 0) + 1).toLocaleString() + ' views');
+
+      // Author avatar initials
+      const initials = (a.author || 'NI').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      setText('authorInitials', initials);
+      setText('authorName2', a.author);
+      setText('authorDate2', fullDate(a.createdAt));
+
+      // Body — preserve paragraphs
+      const bodyEl = document.getElementById('articleBody');
+      const paragraphs = (a.body || '').split(/\n\n+/).filter(Boolean);
+      bodyEl.innerHTML = paragraphs.map((p, i) => {
+        const trimmed = p.trim();
+        // Detect headers (lines starting with # or ALL CAPS short lines)
+        if (trimmed.startsWith('# ')) return `<h2>${trimmed.slice(2)}</h2>`;
+        if (trimmed.startsWith('## ')) return `<h3>${trimmed.slice(3)}</h3>`;
+        // Blockquote lines starting with >
+        if (trimmed.startsWith('> ')) return `<blockquote>${trimmed.slice(2)}</blockquote>`;
+        // Drop cap on first paragraph
+        if (i === 0) return `<p class="drop-cap">${trimmed}</p>`;
+        return `<p>${trimmed}</p>`;
+      }).join('');
+
+      // Share URL
+      const shareURL = encodeURIComponent(location.href);
+      const shareTitle = encodeURIComponent(a.title);
+      document.getElementById('shareTwitter').href = `https://twitter.com/intent/tweet?text=${shareTitle}&url=${shareURL}`;
+      document.getElementById('shareFacebook').href = `https://www.facebook.com/sharer/sharer.php?u=${shareURL}`;
+      document.getElementById('shareWhatsApp').href = `https://wa.me/?text=${shareTitle}%20${shareURL}`;
+
+      // Copy link
+      document.getElementById('copyLink').addEventListener('click', () => {
+        navigator.clipboard.writeText(location.href).then(() => {
+          document.getElementById('copyLink').textContent = '✅ Copied!';
+          setTimeout(() => document.getElementById('copyLink').textContent = '🔗 Copy Link', 2000);
+        });
+      });
+
+      // Reading progress bar
+      window.addEventListener('scroll', updateProgress);
+
+      // Load related articles
+      loadRelated(a.category, a.id);
+
+      // Remove skeleton
+      document.getElementById('articleSkeleton').style.display = 'none';
+      document.getElementById('articleContent').style.display = 'block';
+
+    } catch(e) {
+      console.error('Firebase error:', e);
+      // Show error message on screen for debugging
+      document.getElementById('articleSkeleton').style.display = 'none';
+      document.getElementById('notFound').style.display = 'flex';
+      document.querySelector('#notFound p').textContent = 'Error: ' + e.message;
+    }
+  }
+
+  function updateProgress() {
+    const el = document.documentElement;
+    const scrollTop = el.scrollTop || document.body.scrollTop;
+    const scrollHeight = el.scrollHeight - el.clientHeight;
+    const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    document.getElementById('readProgress').style.width = pct + '%';
+  }
+
+  async function loadRelated(category, currentId) {
+    try {
+      const q = query(
+        collection(db, 'articles'),
+        orderBy('createdAt', 'desc'),
+        limit(10)
+      );
+      const snap = await getDocs(q);
+      const related = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (d.id !== currentId && data.category === category && data.status === 'published') {
+          related.push({ id: d.id, ...data });
+        }
+      });
+
+      if (related.length === 0) {
+        document.getElementById('relatedSection').style.display = 'none'; return;
+      }
+
+      document.getElementById('relatedGrid').innerHTML = related.slice(0,3).map(a => `
+        <article class="rel-card" onclick="location.href='article.html?id=${a.id}'" tabindex="0">
+          <div class="rel-card-img" style="background:${cardBg(a.category)};">
+            ${a.imageURL ? `<img src="${a.imageURL}" alt="" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:2rem;">${catEmoji[a.category]||'📰'}</span>`}
+          </div>
+          <div class="rel-card-body">
+            <span class="category-badge ${catClass[a.category]||'cat-general'}">${a.category}</span>
+            <h3 class="rel-card-title">${a.title}</h3>
+            <div class="rel-card-meta">${a.author} · ${timeAgo(a.createdAt)}</div>
+          </div>
+        </article>
+      `).join('');
+
+    } catch(e) {
+      document.getElementById('relatedSection').style.display = 'none';
+    }
+  }
+
+  function show404() {
+    document.getElementById('articleSkeleton').style.display = 'none';
+    document.getElementById('notFound').style.display = 'flex';
+  }
+
+  loadArticle();
+</script>
+
+<style>
+  :root {
+    --emerald: #059669;
+    --emerald-dark: #047857;
+    --emerald-light: #d1fae5;
+    --emerald-mid: #10b981;
+    --dark-grey: #1f2937;
+    --mid-grey: #374151;
+    --light-grey: #6b7280;
+    --border-grey: #e5e7eb;
+    --off-white: #f9f7f4;
+    --white: #ffffff;
+    --ink: #111827;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Source Serif 4', Georgia, serif;
+    --font-ui: 'DM Sans', sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font-body); background: var(--off-white); color: var(--ink); line-height: 1.7; -webkit-font-smoothing: antialiased; }
+  img { display: block; max-width: 100%; }
+  a { text-decoration: none; color: inherit; }
+
+  /* READING PROGRESS */
+  .read-progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--emerald);
+    width: 0%;
+    z-index: 999;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(5,150,105,0.5);
+  }
+
+  /* HEADER */
+  header { background: var(--white); border-bottom: 1px solid var(--border-grey); position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 12px rgba(0,0,0,0.06); }
+  .header-inner { max-width: 1240px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .logo-icon { width: 38px; height: 38px; background: var(--emerald); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: var(--font-display); font-weight: 900; font-size: 1rem; }
+  .logo-text { display: flex; flex-direction: column; line-height: 1; }
+  .logo-name { font-family: var(--font-display); font-weight: 900; font-size: 1.1rem; color: var(--ink); }
+  .logo-tagline { font-family: var(--font-ui); font-size: 0.6rem; color: var(--light-grey); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 1px; }
+  nav { display: flex; align-items: center; gap: 2px; }
+  nav a { font-family: var(--font-ui); font-size: 0.82rem; font-weight: 500; color: var(--mid-grey); padding: 6px 11px; border-radius: 6px; transition: color 0.2s, background 0.2s; white-space: nowrap; }
+  nav a:hover { color: var(--emerald); background: var(--emerald-light); }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .btn-subscribe { font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; padding: 8px 16px; background: var(--emerald); color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+  .btn-subscribe:hover { background: var(--emerald-dark); }
+  .hamburger { display: none; width: 36px; height: 36px; border: 1.5px solid var(--border-grey); background: transparent; border-radius: 8px; cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+  .hamburger span { width: 18px; height: 2px; background: var(--mid-grey); border-radius: 2px; }
+  .mobile-nav { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; opacity: 0; transition: opacity 0.3s; }
+  .mobile-nav.open { display: flex; opacity: 1; }
+  .mobile-nav-panel { background: var(--white); width: 280px; height: 100%; padding: 24px 20px; display: flex; flex-direction: column; gap: 8px; transform: translateX(-100%); transition: transform 0.3s ease; }
+  .mobile-nav.open .mobile-nav-panel { transform: translateX(0); }
+  .mobile-nav-close { align-self: flex-end; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--mid-grey); margin-bottom: 12px; }
+  .mobile-nav a { font-family: var(--font-ui); font-size: 1rem; font-weight: 500; color: var(--mid-grey); padding: 12px 16px; border-radius: 8px; display: block; transition: all 0.2s; }
+  .mobile-nav a:hover { background: var(--emerald-light); color: var(--emerald); }
+
+  /* BREADCRUMB */
+  .breadcrumb { max-width: 800px; margin: 24px auto 0; padding: 0 20px; font-family: var(--font-ui); font-size: 0.75rem; color: var(--light-grey); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .breadcrumb a { color: var(--emerald); transition: opacity 0.2s; }
+  .breadcrumb a:hover { opacity: 0.75; }
+  .breadcrumb .sep { color: var(--border-grey); }
+
+  /* ARTICLE LAYOUT */
+  .article-wrap { max-width: 800px; margin: 0 auto; padding: 0 20px 60px; }
+
+  /* SKELETON */
+  .skeleton { background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  #articleSkeleton { max-width: 800px; margin: 24px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }
+  .skel-cover { height: 420px; border-radius: 16px; }
+  .skel-badge { height: 22px; width: 80px; }
+  .skel-title { height: 48px; width: 90%; }
+  .skel-title-2 { height: 48px; width: 70%; }
+  .skel-meta { height: 18px; width: 60%; }
+  .skel-body { height: 18px; }
+  .skel-body.short { width: 85%; }
+
+  /* ARTICLE CONTENT */
+  #articleContent { display: none; }
+
+  /* COVER IMAGE */
+  .article-cover {
+    width: 100%;
+    height: 420px;
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 24px 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #d1fae5, #6ee7b7);
+  }
+  .article-cover.has-image { background: var(--dark-grey); }
+  .article-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .cover-emoji { font-size: 5rem; opacity: 0.6; }
+
+  /* CATEGORY & BREAKING BADGES */
+  .category-badge { display: inline-block; font-family: var(--font-ui); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin-bottom: 0; }
+  .cat-politics { background: #fee2e2; color: #b91c1c; }
+  .cat-entertainment { background: #fef3c7; color: #92400e; }
+  .cat-health { background: #d1fae5; color: #065f46; }
+  .cat-education { background: #dbeafe; color: #1e40af; }
+  .cat-security { background: #f3e8ff; color: #6b21a8; }
+  .cat-general { background: var(--emerald-light); color: var(--emerald-dark); }
+  .breaking-badge { display: none; align-items: center; gap: 5px; background: #b91c1c; color: #fff; font-family: var(--font-ui); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; }
+  .breaking-badge .bdot { width: 5px; height: 5px; background: #fff; border-radius: 50%; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ARTICLE HEADER */
+  .article-header { margin-bottom: 28px; }
+  .article-badges { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .article-title {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 900;
+    line-height: 1.18;
+    color: var(--ink);
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .article-excerpt {
+    font-family: var(--font-body);
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--mid-grey);
+    line-height: 1.65;
+    margin-bottom: 24px;
+    border-left: 3px solid var(--emerald);
+    padding-left: 16px;
+  }
+  .article-byline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border-grey);
+    border-bottom: 1px solid var(--border-grey);
+    margin-bottom: 8px;
+  }
+  .author-avatar {
+    width: 44px; height: 44px;
+    background: var(--emerald);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.9rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .byline-info { flex: 1; }
+  .byline-author { font-family: var(--font-ui); font-size: 0.88rem; font-weight: 700; color: var(--ink); }
+  .byline-date { font-family: var(--font-ui); font-size: 0.75rem; color: var(--light-grey); margin-top: 2px; }
+  .byline-stats { display: flex; gap: 16px; flex-shrink: 0; }
+  .byline-stat { font-family: var(--font-ui); font-size: 0.72rem; color: var(--light-grey); display: flex; align-items: center; gap: 4px; }
+
+  /* ARTICLE BODY */
+  .article-body { font-size: 1.05rem; line-height: 1.85; color: var(--ink); }
+  .article-body p { margin-bottom: 1.5em; }
+  .article-body h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 900; color: var(--ink); margin: 2em 0 0.75em; line-height: 1.25; }
+  .article-body h3 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--ink); margin: 1.6em 0 0.6em; }
+  .article-body blockquote { border-left: 4px solid var(--emerald); padding: 12px 20px; margin: 1.8em 0; background: var(--emerald-light); border-radius: 0 8px 8px 0; font-style: italic; font-size: 1.05rem; color: var(--mid-grey); }
+  .article-body a { color: var(--emerald); border-bottom: 1px solid var(--emerald-light); transition: border-color 0.2s; }
+  .article-body a:hover { border-color: var(--emerald); }
+
+  /* Drop cap */
+  .drop-cap::first-letter {
+    float: left;
+    font-family: var(--font-display);
+    font-size: 4.2rem;
+    font-weight: 900;
+    line-height: 0.75;
+    margin: 6px 10px 0 0;
+    color: var(--emerald);
+  }
+
+  /* SHARE BAR */
+  .share-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border-grey);
+    border-bottom: 1px solid var(--border-grey);
+    margin: 36px 0 28px;
+    flex-wrap: wrap;
+  }
+  .share-label { font-family: var(--font-ui); font-size: 0.78rem; font-weight: 700; color: var(--light-grey); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+  .share-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .share-twitter { background: #e7f5fe; color: #0284c7; border-color: #bae6fd; }
+  .share-twitter:hover { background: #bae6fd; }
+  .share-facebook { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .share-facebook:hover { background: #bfdbfe; }
+  .share-whatsapp { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+  .share-whatsapp:hover { background: #bbf7d0; }
+  .share-copy { background: var(--off-white); color: var(--mid-grey); border-color: var(--border-grey); }
+  .share-copy:hover { background: var(--border-grey); }
+
+  /* TAGS */
+  .article-tags { display: flex; align-items: center; gap: 8px; margin-bottom: 36px; flex-wrap: wrap; }
+  .tag-label { font-family: var(--font-ui); font-size: 0.75rem; font-weight: 700; color: var(--light-grey); text-transform: uppercase; letter-spacing: 0.06em; }
+  .tag { font-family: var(--font-ui); font-size: 0.75rem; padding: 4px 12px; background: var(--white); border: 1.5px solid var(--border-grey); border-radius: 20px; color: var(--mid-grey); cursor: pointer; transition: all 0.2s; }
+  .tag:hover { border-color: var(--emerald); color: var(--emerald); background: var(--emerald-light); }
+
+  /* RELATED */
+  .related-section { margin-top: 60px; padding-top: 40px; border-top: 2px solid var(--ink); max-width: 1200px; margin-left: auto; margin-right: auto; padding-left: 20px; padding-right: 20px; }
+  .related-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .related-title { font-family: var(--font-display); font-size: 1.35rem; font-weight: 900; color: var(--ink); }
+  .related-title span { color: var(--emerald); }
+  .related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .rel-card { background: var(--white); border-radius: 10px; overflow: hidden; border: 1px solid var(--border-grey); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+  .rel-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(0,0,0,0.1); }
+  .rel-card-img { height: 150px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .rel-card-body { padding: 16px; }
+  .rel-card-title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; line-height: 1.35; color: var(--ink); margin: 8px 0 8px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .rel-card:hover .rel-card-title { color: var(--emerald); }
+  .rel-card-meta { font-family: var(--font-ui); font-size: 0.7rem; color: var(--light-grey); }
+
+  /* VALUES */
+  .values-banner { background: var(--ink); padding: 20px; margin-top: 60px; }
+  .values-inner { max-width: 1240px; margin: 0 auto; display: flex; justify-content: center; }
+  .value-item { display: flex; align-items: center; gap: 10px; padding: 0 36px; border-right: 1px solid rgba(255,255,255,0.1); }
+  .value-item:last-child { border-right: none; }
+  .value-icon { font-size: 1.1rem; }
+  .value-label { font-family: var(--font-ui); font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.65); letter-spacing: 0.04em; text-transform: uppercase; }
+  .value-label strong { color: var(--emerald-mid); display: block; font-size: 0.7rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+  /* FOOTER */
+  footer { background: var(--dark-grey); color: rgba(255,255,255,0.75); }
+  .footer-top { max-width: 1240px; margin: 0 auto; padding: 48px 20px 36px; display: grid; grid-template-columns: 260px 1fr 1fr 1fr; gap: 40px; }
+  .footer-brand .logo-name { color: #fff; font-size: 1.3rem; }
+  .footer-brand .logo-tagline { color: rgba(255,255,255,0.5); }
+  .footer-brand p { font-size: 0.82rem; line-height: 1.6; margin-top: 12px; margin-bottom: 16px; color: rgba(255,255,255,0.6); }
+  .footer-social { display: flex; gap: 10px; }
+  .social-btn { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-family: var(--font-ui); font-weight: 700; color: rgba(255,255,255,0.6); cursor: pointer; transition: background 0.2s; }
+  .social-btn:hover { background: var(--emerald); color: #fff; }
+  .footer-col h4 { font-family: var(--font-ui); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 12px; }
+  .footer-col a { display: block; font-family: var(--font-ui); font-size: 0.82rem; color: rgba(255,255,255,0.6); padding: 4px 0; transition: color 0.2s; }
+  .footer-col a:hover { color: var(--emerald-mid); }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); max-width: 1240px; margin: 0 auto; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .footer-bottom p { font-family: var(--font-ui); font-size: 0.72rem; color: rgba(255,255,255,0.3); }
+  .footer-bottom-links { display: flex; gap: 18px; }
+  .footer-bottom-links a { font-family: var(--font-ui); font-size: 0.7rem; color: rgba(255,255,255,0.3); transition: color 0.2s; }
+  .footer-bottom-links a:hover { color: rgba(255,255,255,0.65); }
+
+  /* 404 */
+  #notFound { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 100px 20px; text-align: center; }
+  #notFound .nf-icon { font-size: 4rem; margin-bottom: 20px; }
+  #notFound h2 { font-family: var(--font-display); font-size: 1.8rem; font-weight: 900; color: var(--ink); margin-bottom: 10px; }
+  #notFound p { font-size: 0.9rem; color: var(--light-grey); margin-bottom: 24px; }
+  #notFound a { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: var(--emerald); color: #fff; border-radius: 8px; font-family: var(--font-ui); font-weight: 600; font-size: 0.88rem; transition: background 0.2s; }
+  #notFound a:hover { background: var(--emerald-dark); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  #articleContent { animation: fadeUp 0.4s ease both; }
+  .related-section { animation: fadeUp 0.5s ease 0.2s both; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) { nav { display: none; } .hamburger { display: flex; } .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; } .footer-brand { grid-column: 1 / -1; } }
+  @media (max-width: 768px) { .article-title { font-size: 1.8rem; } .article-cover { height: 280px; } .related-grid { grid-template-columns: 1fr; } .footer-top { grid-template-columns: 1fr; gap: 20px; } .footer-bottom { flex-direction: column; gap: 10px; } .values-inner { flex-wrap: wrap; } .value-item { border-right: none; padding: 8px 16px; } .byline-stats { display: none; } }
+  @media (max-width: 480px) { .article-title { font-size: 1.5rem; } .article-excerpt { font-size: 1rem; } .article-body { font-size: 0.97rem; } .share-bar { gap: 8px; } .btn-subscribe { display: none; } .header-inner { height: 60px; } }
+</style>
+</head>
+<body>
+
+<!-- READING PROGRESS -->
+<div class="read-progress-bar" id="readProgress"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">NI</div>
+      <div class="logo-text">
+        <span class="logo-name">Naija Insights</span>
+        <span class="logo-tagline">Nigeria's Pulse</span>
+      </div>
+    </a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="index.html?cat=Politics">Politics</a>
+      <a href="index.html?cat=Entertainment">Entertainment</a>
+      <a href="index.html?cat=Health">Health</a>
+      <a href="index.html?cat=Education">Education</a>
+      <a href="index.html?cat=Security">Security</a>
+    </nav>
+    <div class="header-right">
+      <button class="btn-subscribe">Subscribe</button>
+      <button class="hamburger" aria-label="Menu" onclick="openNav()"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav" id="mobileNav" onclick="closeNavOutside(event)">
+  <div class="mobile-nav-panel">
+    <button class="mobile-nav-close" onclick="closeNav()">✕</button>
+    <a href="index.html">🏠 Home</a>
+    <a href="index.html?cat=Politics">🏛️ Politics</a>
+    <a href="index.html?cat=Entertainment">🎭 Entertainment</a>
+    <a href="index.html?cat=Health">🏥 Health</a>
+    <a href="index.html?cat=Education">📚 Education</a>
+    <a href="index.html?cat=Security">🛡️ Security</a>
+  </div>
+</div>
+
+<!-- BREADCRUMB -->
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="index.html">Home</a>
+  <span class="sep">›</span>
+  <span id="breadcrumbCat">Article</span>
+  <span class="sep">›</span>
+  <span id="breadcrumbTitle" style="color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;"></span>
+</nav>
+
+<!-- SKELETON -->
+<div id="articleSkeleton">
+  <div class="skeleton skel-cover"></div>
+  <div class="skeleton skel-badge"></div>
+  <div class="skeleton skel-title"></div>
+  <div class="skeleton skel-title-2"></div>
+  <div class="skeleton skel-meta"></div>
+  <div style="height:24px;"></div>
+  <div class="skeleton skel-body"></div>
+  <div class="skeleton skel-body short"></div>
+  <div class="skeleton skel-body"></div>
+  <div class="skeleton skel-body short"></div>
+  <div class="skeleton skel-body"></div>
+</div>
+
+<!-- 404 -->
+<div id="notFound">
+  <div class="nf-icon">📭</div>
+  <h2>Article Not Found</h2>
+  <p>This article may have been removed or the link is incorrect.</p>
+  <a href="index.html">← Back to Home</a>
+</div>
+
+<!-- ARTICLE CONTENT -->
+<div id="articleContent">
+
+  <!-- Cover -->
+  <div class="article-wrap" style="padding-bottom:0;">
+    <div class="article-cover" id="articleCover"></div>
+  </div>
+
+  <!-- Header -->
+  <div class="article-wrap">
+    <div class="article-header">
+      <div class="article-badges">
+        <span id="articleBadge" class="category-badge"></span>
+        <span class="breaking-badge" id="breakingBadge"><span class="bdot"></span> Breaking</span>
+      </div>
+      <h1 class="article-title" id="articleTitle"></h1>
+      <p class="article-excerpt" id="articleExcerpt"></p>
+      <div class="article-byline">
+        <div class="author-avatar" id="authorInitials"></div>
+        <div class="byline-info">
+          <div class="byline-author" id="authorName2"></div>
+          <div class="byline-date" id="authorDate2"></div>
+        </div>
+        <div class="byline-stats">
+          <div class="byline-stat">⏱ <span id="articleReadTime"></span></div>
+          <div class="byline-stat">👁 <span id="articleViews"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="article-body" id="articleBody"></div>
+
+    <!-- Share -->
+    <div class="share-bar">
+      <span class="share-label">Share:</span>
+      <a id="shareTwitter" href="#" target="_blank" rel="noopener" class="share-btn share-twitter">𝕏 Twitter</a>
+      <a id="shareFacebook" href="#" target="_blank" rel="noopener" class="share-btn share-facebook">f Facebook</a>
+      <a id="shareWhatsApp" href="#" target="_blank" rel="noopener" class="share-btn share-whatsapp">💬 WhatsApp</a>
+      <button id="copyLink" class="share-btn share-copy">🔗 Copy Link</button>
+    </div>
+
+    <!-- Tags -->
+    <div class="article-tags">
+      <span class="tag-label">Topics:</span>
+      <span class="tag" id="tagCat"></span>
+      <span class="tag">Nigeria</span>
+      <span class="tag">Naija Insights</span>
+    </div>
+  </div>
+</div>
+
+<!-- RELATED ARTICLES -->
+<div class="related-section" id="relatedSection">
+  <div class="related-header">
+    <h2 class="related-title">More in <span id="relatedCatLabel">this category</span></h2>
+    <a href="index.html" style="font-family:var(--font-ui);font-size:0.75rem;font-weight:600;color:var(--emerald);">View all →</a>
+  </div>
+  <div class="related-grid" id="relatedGrid"></div>
+</div>
+
+<!-- VALUES -->
+<div class="values-banner">
+  <div class="values-inner">
+    <div class="value-item"><span class="value-icon">✅</span><div class="value-label">Reliability<strong>You can count on us</strong></div></div>
+    <div class="value-item"><span class="value-icon">🔍</span><div class="value-label">Authenticity<strong>Facts, not rumours</strong></div></div>
+    <div class="value-item"><span class="value-icon">⚖️</span><div class="value-label">Balance<strong>All sides, every story</strong></div></div>
+    <div class="value-item"><span class="value-icon">⚡</span><div class="value-label">Timeliness<strong>First, and accurate</strong></div></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="logo"><div class="logo-icon">NI</div><div class="logo-text"><span class="logo-name">Naija Insights</span><span class="logo-tagline">Nigeria's Pulse</span></div></div>
+      <p>Your trusted source for balanced, timely, and authentic news from across Nigeria.</p>
+      <div class="footer-social"><div class="social-btn">𝕏</div><div class="social-btn">f</div><div class="social-btn">▶</div><div class="social-btn">in</div></div>
+    </div>
+    <div class="footer-col"><h4>Sections</h4><a href="index.html?cat=Politics">Politics</a><a href="index.html?cat=Entertainment">Entertainment</a><a href="index.html?cat=Health">Health</a><a href="index.html?cat=Education">Education</a><a href="index.html?cat=Security">Security</a></div>
+    <div class="footer-col"><h4>Company</h4><a href="#">About Us</a><a href="#">Our Team</a><a href="#">Advertise</a><a href="#">Contact</a></div>
+    <div class="footer-col"><h4>Legal</h4><a href="#">Privacy Policy</a><a href="#">Terms of Use</a><a href="#">Editorial Standards</a></div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Naija Insights. All rights reserved. Made in Nigeria 🇳🇬</p>
+    <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
+  </div>
+</footer>
+
+<script>
+  // Mobile nav
+  function openNav(){const n=document.getElementById('mobileNav');n.style.display='flex';requestAnimationFrame(()=>n.classList.add('open'));document.body.style.overflow='hidden';}
+  function closeNav(){const n=document.getElementById('mobileNav');n.classList.remove('open');setTimeout(()=>n.style.display='none',300);document.body.style.overflow='';}
+  function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
+
+  // Populate breadcrumb & tags after Firebase loads — hooked via MutationObserver on title
+  const titleObserver = new MutationObserver(() => {
+    const t = document.getElementById('articleTitle').textContent;
+    const b = document.getElementById('articleBadge').textContent;
+    if (t) {
+      document.getElementById('breadcrumbTitle').textContent = t;
+      document.getElementById('breadcrumbCat').textContent = b || 'Article';
+      document.getElementById('tagCat').textContent = b || 'News';
+      document.getElementById('relatedCatLabel').textContent = b || 'this category';
+    }
+  });
+  titleObserver.observe(document.getElementById('articleTitle'), { childList: true, characterData: true, subtree: true });
+</script>
+</body>
+</html>
