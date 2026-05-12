@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naija Insights — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, getDoc, updateDoc, serverTimestamp, query, orderBy }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ─── PASTE YOUR FIREBASE CONFIG HERE ───
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCoc6cZeyK-QnRigxT9KSU9fk5kFAyCJc",
+    authDomain: "naija-insights.firebaseapp.com",
+    projectId: "naija-insights",
+    storageBucket: "naija-insights.firebasestorage.app",
+    messagingSenderId: "620443477759",
+    appId: "1:620443477759:web:5ff1a76f4e0392532bceca"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // ── Helpers ──
+  function show(id)  { document.getElementById(id).style.display = 'flex'; }
+  function hide(id)  { document.getElementById(id).style.display = 'none'; }
+  function toast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.dataset.original = btn.dataset.original || btn.textContent;
+    btn.textContent = loading ? 'Please wait…' : btn.dataset.original;
+  }
+
+  // ── Auth State ──
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      hide('loginScreen');
+      show('dashboardScreen');
+      document.getElementById('adminEmail').textContent = user.email;
+      loadArticles();
+    } else {
+      show('loginScreen');
+      hide('dashboardScreen');
+    }
+  });
+
+  // ── Login ──
+  window.handleLogin = async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass  = document.getElementById('loginPass').value;
+    const err   = document.getElementById('loginError');
+    err.textContent = '';
+    if (!email || !pass) { err.textContent = 'Please fill in all fields.'; return; }
+    setLoading('loginBtn', true);
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      err.textContent = 'Invalid email or password. Try again.';
+    }
+    setLoading('loginBtn', false);
+  };
+
+  // ── Logout ──
+  window.handleLogout = async () => {
+    await signOut(auth);
+    toast('Logged out successfully.', 'info');
+  };
+
+  // ── Tab switching ──
+  window.switchTab = (tab) => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'articles') loadArticles();
+  };
+
+  // ── Image URL preview ──
+  window.previewImageURL = (input) => {
+    const url = input.value.trim();
+    const preview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('imagePlaceholder');
+    const status = document.getElementById('urlStatus');
+    if (!url) {
+      preview.style.display = 'none';
+      placeholder.style.display = 'flex';
+      status.textContent = '';
+      return;
+    }
+    // Test if URL loads
+    const img = new Image();
+    img.onload = () => {
+      preview.src = url;
+      preview.style.display = 'block';
+      placeholder.style.display = 'none';
+      status.textContent = '✅ Image loaded successfully';
+      status.style.color = '#059669';
+    };
+    img.onerror = () => {
+      preview.style.display = 'none';
+      placeholder.style.display = 'flex';
+      status.textContent = '❌ Could not load image — check the URL';
+      status.style.color = '#ef4444';
+    };
+    img.src = url;
+  };
+
+  // ── Publish Article ──
+  window.publishArticle = async () => {
+    const title    = document.getElementById('artTitle').value.trim();
+    const category = document.getElementById('artCategory').value;
+    const author   = document.getElementById('artAuthor').value.trim();
+    const excerpt  = document.getElementById('artExcerpt').value.trim();
+    const body     = document.getElementById('artBody').value.trim();
+    const status   = document.getElementById('artStatus').value;
+    const imageURL = document.getElementById('artImageURL').value.trim();
+    const breaking = document.getElementById('artBreaking').checked;
+    const featured = document.getElementById('artFeatured').checked;
+
+    if (!title || !category || !author || !body) {
+      toast('Please fill in all required fields.', 'error'); return;
+    }
+    setLoading('publishBtn', true);
+
+    try {
+      const docRef = await addDoc(collection(db, 'articles'), {
+        title, category, author, excerpt, body,
+        imageURL, status, breaking, featured,
+        readTime: Math.ceil(body.split(' ').length / 200) + ' min read',
+        createdAt: serverTimestamp(),
+        views: 0
+      });
+
+      toast('Article published successfully! ✅');
+
+      // Send email to subscribers if published
+      if (status === 'published') {
+        sendNewsletterEmail(title, category, docRef.id);
+      }
+
+      resetForm();
+      switchTab('articles');
+    } catch(e) {
+      toast('Error publishing: ' + e.message, 'error');
+    }
+    setLoading('publishBtn', false);
+  };
+
+  function resetForm() {
+    ['artTitle','artAuthor','artExcerpt','artBody','artImageURL'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('artCategory').value = '';
+    document.getElementById('artStatus').value = 'published';
+    document.getElementById('artBreaking').checked = false;
+    document.getElementById('artFeatured').checked = false;
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imagePlaceholder').style.display = 'flex';
+    document.getElementById('urlStatus').textContent = '';
+    document.getElementById('charCount').textContent = '0 words';
+  }
+
+  // ── Send newsletter email via Brevo ──
+  async function sendNewsletterEmail(title, category, articleId) {
+    const siteURL = 'https://naijainsights.workwithadggraphics.workers.dev';
+    const articleLink = siteURL + '/article.html?id=' + articleId;
+    const BREVO_KEY = ['xkeysib-3752285541b526313eda3a2d43c39b280a84650438748a6c73d59407bddc5c1d','As01CHrhYJ3TBwwi'].join('-');
+    try {
+      const res = await fetch('https://api.brevo.com/v3/emailCampaigns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': BREVO_KEY
+        },
+        body: JSON.stringify({
+          name: 'Article: ' + title.substring(0, 50) + ' ' + Date.now(),
+          subject: '📰 New on Naija Insights: ' + title,
+          sender: { name: 'Naija Insights', email: 'workwithadggraphics@gmail.com' },
+          type: 'classic',
+          htmlContent: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;"><div style="background:#059669;padding:20px;border-radius:12px 12px 0 0;text-align:center;"><h1 style="color:#fff;font-size:1.5rem;margin:0;">Naija Insights</h1><p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:0.85rem;">Nigeria Pulse</p></div><div style="background:#fff;padding:28px;border:1px solid #e5e7eb;border-top:none;"><span style="background:#d1fae5;color:#065f46;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;">' + category + '</span><h2 style="font-size:1.4rem;color:#111827;margin:16px 0 12px;line-height:1.3;">' + title + '</h2><p style="color:#6b7280;font-size:0.9rem;line-height:1.6;margin-bottom:24px;">A new article has just been published on Naija Insights.</p><a href="' + articleLink + '" style="display:inline-block;background:#059669;color:#fff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:0.9rem;text-decoration:none;">Read Full Article →</a></div><div style="background:#f9fafb;padding:16px;border-radius:0 0 12px 12px;text-align:center;border:1px solid #e5e7eb;border-top:none;"><p style="font-size:0.75rem;color:#9ca3af;margin:0;">You are receiving this because you subscribed to Naija Insights.<br>© 2026 Naija Insights. Made in Nigeria 🇳🇬</p></div></div>',
+          recipients: { listIds: [2] },
+          scheduledAt: new Date(Date.now() + 60000).toISOString()
+        })
+      });
+      if (res.ok) {
+        toast('📧 Subscribers will be notified by email!');
+      }
+    } catch(e) {
+      console.error('Email notification error:', e);
+    }
+  }
+
+  // ── Settings — Save & Load ──
+  window.saveSettings = async () => {
+    const siteName    = document.getElementById('settingSiteName').value.trim();
+    const tagline     = document.getElementById('settingTagline').value.trim();
+    const email       = document.getElementById('settingEmail').value.trim();
+    const twitter     = document.getElementById('settingTwitter').value.trim();
+    const facebook    = document.getElementById('settingFacebook').value.trim();
+    const instagram   = document.getElementById('settingInstagram').value.trim();
+    try {
+      await updateDoc(doc(db, 'settings', 'site'), {
+        siteName, tagline, email, twitter, facebook, instagram
+      });
+      toast('Settings saved! ✅');
+    } catch(e) {
+      // Doc might not exist yet — create it
+      try {
+        const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+        await setDoc(doc(db, 'settings', 'site'), {
+          siteName, tagline, email, twitter, facebook, instagram
+        });
+        toast('Settings saved! ✅');
+      } catch(e2) {
+        toast('Error saving: ' + e2.message, 'error');
+      }
+    }
+  };
+
+  window.loadSettings = async () => {
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'site'));
+      if (snap.exists()) {
+        const s = snap.data();
+        if (s.siteName)  document.getElementById('settingSiteName').value  = s.siteName;
+        if (s.tagline)   document.getElementById('settingTagline').value   = s.tagline;
+        if (s.email)     document.getElementById('settingEmail').value     = s.email;
+        if (s.twitter)   document.getElementById('settingTwitter').value   = s.twitter;
+        if (s.facebook)  document.getElementById('settingFacebook').value  = s.facebook;
+        if (s.instagram) document.getElementById('settingInstagram').value = s.instagram;
+      }
+    } catch(e) { console.log('Settings not found yet.'); }
+  };
+
+  // ── Load Articles ──
+  window.loadArticles = async () => {
+    const list = document.getElementById('articleList');
+    list.innerHTML = '<div class="loading-msg">Loading articles…</div>';
+    try {
+      const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        list.innerHTML = '<div class="empty-msg">No articles yet. Write your first one!</div>';
+        return;
+      }
+      list.innerHTML = '';
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const date = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleDateString('en-NG', {
+          day:'numeric', month:'short', year:'numeric'
+        }) : 'Just now';
+        const card = document.createElement('div');
+        card.className = 'article-row';
+        card.innerHTML = `
+          <div class="article-row-img">
+            ${d.imageURL ? `<img src="${d.imageURL}" alt="">` : `<span class="cat-emoji">${catEmoji(d.category)}</span>`}
+          </div>
+          <div class="article-row-body">
+            <div class="article-row-top">
+              <span class="row-badge cat-${d.category}">${d.category}</span>
+              ${d.breaking ? '<span class="badge-breaking">Breaking</span>' : ''}
+              ${d.featured ? '<span class="badge-featured">Featured</span>' : ''}
+              <span class="row-status ${d.status}">${d.status}</span>
+            </div>
+            <div class="article-row-title">${d.title}</div>
+            <div class="article-row-meta">By ${d.author} · ${date} · ${d.readTime} · ${d.views} views</div>
+          </div>
+          <div class="article-row-actions">
+            <button class="row-btn edit" onclick="editArticle('${docSnap.id}')">✏️ Edit</button>
+            <button class="row-btn delete" onclick="deleteArticle('${docSnap.id}')">🗑️ Delete</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      // Update stats
+      document.getElementById('statTotal').textContent = snap.size;
+      let published = 0, drafts = 0, breaking = 0;
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.status === 'published') published++;
+        if (data.status === 'draft') drafts++;
+        if (data.breaking) breaking++;
+      });
+      document.getElementById('statPublished').textContent = published;
+      document.getElementById('statDrafts').textContent = drafts;
+      document.getElementById('statBreaking').textContent = breaking;
+
+    } catch(e) {
+      list.innerHTML = '<div class="empty-msg">Error loading articles: ' + e.message + '</div>';
+    }
+  };
+
+  function catEmoji(cat) {
+    const map = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️' };
+    return map[cat] || '📰';
+  }
+
+  // ── Delete ──
+  window.deleteArticle = async (id) => {
+    if (!confirm('Delete this article? This cannot be undone.')) return;
+    try {
+      await deleteDoc(doc(db, 'articles', id));
+      toast('Article deleted.', 'info');
+      loadArticles();
+    } catch(e) {
+      toast('Error deleting: ' + e.message, 'error');
+    }
+  };
+
+  // ── Edit — full implementation ──
+  let editingId = null;
+
+  window.editArticle = async (id) => {
+    try {
+      const snap = await getDoc(doc(db, 'articles', id));
+      if (!snap.exists()) { toast('Article not found.', 'error'); return; }
+      const a = snap.data();
+      editingId = id;
+
+      // Populate form fields
+      document.getElementById('artTitle').value    = a.title    || '';
+      document.getElementById('artExcerpt').value  = a.excerpt  || '';
+      document.getElementById('artBody').value     = a.body     || '';
+      document.getElementById('artAuthor').value   = a.author   || '';
+      document.getElementById('artCategory').value = a.category || '';
+      document.getElementById('artStatus').value   = a.status   || 'published';
+      document.getElementById('artImageURL').value = a.imageURL || '';
+      document.getElementById('artBreaking').checked = a.breaking || false;
+      document.getElementById('artFeatured').checked = a.featured || false;
+
+      // Show image preview if URL exists
+      if (a.imageURL) {
+        document.getElementById('imagePreview').src = a.imageURL;
+        document.getElementById('imagePreview').style.display = 'block';
+        document.getElementById('imagePlaceholder').style.display = 'none';
+      }
+
+      // Update word count
+      updateWordCount();
+
+      // Change publish button to Update
+      const btn = document.getElementById('publishBtn');
+      btn.textContent = '💾 Update Article';
+      btn.style.background = '#1e40af';
+
+      // Add cancel edit button if not already there
+      if (!document.getElementById('cancelEditBtn')) {
+        const cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancelEditBtn';
+        cancelBtn.className = 'btn-draft';
+        cancelBtn.textContent = '✕ Cancel Edit';
+        cancelBtn.onclick = cancelEdit;
+        btn.parentNode.appendChild(cancelBtn);
+      }
+
+      // Switch to compose tab
+      switchTab('compose');
+      toast('Article loaded for editing. Make changes and click Update.', 'info');
+    } catch(e) {
+      toast('Error loading article: ' + e.message, 'error');
+    }
+  };
+
+  function cancelEdit() {
+    editingId = null;
+    resetForm();
+    const btn = document.getElementById('publishBtn');
+    btn.textContent = '🚀 Publish Article';
+    btn.style.background = '';
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.remove();
+    toast('Edit cancelled.', 'info');
+  }
+
+  // ── Override publishArticle to handle both create and update ──
+  const _originalPublish = window.publishArticle;
+  window.publishArticle = async () => {
+    if (!editingId) { _originalPublish(); return; }
+
+    // UPDATE existing article
+    const title    = document.getElementById('artTitle').value.trim();
+    const category = document.getElementById('artCategory').value;
+    const author   = document.getElementById('artAuthor').value.trim();
+    const excerpt  = document.getElementById('artExcerpt').value.trim();
+    const body     = document.getElementById('artBody').value.trim();
+    const status   = document.getElementById('artStatus').value;
+    const imageURL = document.getElementById('artImageURL').value.trim();
+    const breaking = document.getElementById('artBreaking').checked;
+    const featured = document.getElementById('artFeatured').checked;
+
+    if (!title || !category || !author || !body) {
+      toast('Please fill in all required fields.', 'error'); return;
+    }
+    setLoading('publishBtn', true);
+    try {
+      await updateDoc(doc(db, 'articles', editingId), {
+        title, category, author, excerpt, body,
+        imageURL, status, breaking, featured,
+        readTime: Math.ceil(body.split(' ').length / 200) + ' min read',
+      });
+      toast('Article updated successfully! ✅');
+      cancelEdit();
+      switchTab('articles');
+    } catch(e) {
+      toast('Error updating: ' + e.message, 'error');
+    }
+    setLoading('publishBtn', false);
+  };
+
+  // ── Word count ──
+  window.updateWordCount = () => {
+    const words = document.getElementById('artBody').value.trim().split(/\s+/).filter(Boolean).length;
+    document.getElementById('charCount').textContent = words + ' words · ~' + Math.ceil(words/200) + ' min read';
+  };
+
+  // ── Enter key on login ──
+  window.loginKeydown = (e) => { if (e.key === 'Enter') handleLogin(); };
+</script>
+
+<style>
+  :root {
+    --emerald: #059669;
+    --emerald-dark: #047857;
+    --emerald-light: #d1fae5;
+    --emerald-mid: #10b981;
+    --dark: #0f172a;
+    --dark2: #1e293b;
+    --dark3: #334155;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --off-white: #f8fafc;
+    --white: #ffffff;
+    --ink: #0f172a;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --blue: #3b82f6;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-ui: 'DM Sans', sans-serif;
+    --sidebar-w: 220px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-ui);
+    background: var(--off-white);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LOGIN SCREEN ── */
+  #loginScreen {
+    min-height: 100vh;
+    background: var(--dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  #loginScreen::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(5,150,105,0.15) 0%, transparent 70%);
+    top: -100px; right: -100px;
+    pointer-events: none;
+  }
+  #loginScreen::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(5,150,105,0.08) 0%, transparent 70%);
+    bottom: -80px; left: -80px;
+    pointer-events: none;
+  }
+
+  .login-card {
+    background: var(--dark2);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 48px 44px;
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.5s ease both;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .login-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .login-logo {
+    width: 48px; height: 48px;
+    background: var(--emerald);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: #fff;
+  }
+  .login-brand-text .brand-name {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.25rem;
+    color: #fff;
+  }
+  .login-brand-text .brand-sub {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .login-card h2 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .login-card p {
+    font-size: 0.84rem;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 28px;
+  }
+
+  .form-group { margin-bottom: 18px; }
+  .form-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #fff;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .form-group input::placeholder { color: rgba(255,255,255,0.25); }
+  .form-group input:focus {
+    border-color: var(--emerald);
+    background: rgba(5,150,105,0.08);
+  }
+
+  .login-error {
+    font-size: 0.8rem;
+    color: #f87171;
+    margin-bottom: 14px;
+    min-height: 18px;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: var(--emerald);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+  }
+  .btn-primary:hover { background: var(--emerald-dark); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── DASHBOARD SHELL ── */
+  #dashboardScreen {
+    display: none;
+    min-height: 100vh;
+    flex-direction: row;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--dark);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-brand {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sidebar-logo {
+    width: 36px; height: 36px;
+    background: var(--emerald);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.9rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .sidebar-brand-name {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .sidebar-brand-sub {
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .sidebar-nav { padding: 16px 12px; flex: 1; }
+  .sidebar-section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    padding: 0 8px;
+    margin: 14px 0 6px;
+  }
+  .tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    color: rgba(255,255,255,0.5);
+    font-family: var(--font-ui);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    margin-bottom: 2px;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+  .tab-btn.active { background: var(--emerald); color: #fff; font-weight: 600; }
+  .tab-btn .tab-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 16px 12px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .admin-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.05);
+    margin-bottom: 8px;
+  }
+  .admin-avatar {
+    width: 32px; height: 32px;
+    background: var(--emerald);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .admin-email {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .btn-logout {
+    width: 100%;
+    padding: 9px;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 9px;
+    color: #f87171;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-logout:hover { background: rgba(239,68,68,0.22); }
+
+  /* Main content */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .top-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .top-bar h1 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .top-bar-right { display: flex; align-items: center; gap: 12px; }
+  .view-site-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--emerald-light);
+    color: var(--emerald-dark);
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .view-site-btn:hover { background: #a7f3d0; }
+
+  /* Tab panels */
+  .tab-panels { padding: 28px 32px; flex: 1; }
+  .tab-panel { display: none; animation: fadeUp 0.3s ease both; }
+  .tab-panel.active { display: block; }
+
+  /* ── STATS ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stat-card .stat-icon { font-size: 1.4rem; }
+  .stat-card .stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat-card .stat-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .stat-card.accent { background: var(--emerald); border-color: var(--emerald); }
+  .stat-card.accent .stat-value,
+  .stat-card.accent .stat-label { color: #fff; }
+
+  /* ── COMPOSE FORM ── */
+  .compose-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
+  }
+  .compose-main, .compose-aside { display: flex; flex-direction: column; gap: 18px; }
+
+  .field-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .field-card label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .field-card .required { color: var(--red); }
+  .field-card input,
+  .field-card select,
+  .field-card textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.88rem;
+    color: var(--ink);
+    background: var(--off-white);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    resize: vertical;
+  }
+  .field-card input:focus,
+  .field-card select:focus,
+  .field-card textarea:focus {
+    border-color: var(--emerald);
+    background: #fff;
+  }
+  .field-card textarea { min-height: 280px; line-height: 1.65; }
+  .field-card .field-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* Image upload */
+  .image-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .image-upload-area:hover { border-color: var(--emerald); background: var(--emerald-light); }
+  .image-upload-area input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  #imagePlaceholder { display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+  #imagePlaceholder .upload-icon { font-size: 2rem; }
+  #imagePlaceholder p { font-size: 0.8rem; color: var(--muted); }
+  #imagePlaceholder span { font-size: 0.72rem; color: var(--muted); opacity: 0.7; }
+  #imagePreview { display: none; width: 100%; border-radius: 8px; max-height: 180px; object-fit: cover; }
+
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 99px;
+    height: 4px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .progress-bar { background: var(--emerald); height: 100%; width: 0; transition: width 0.3s; border-radius: 99px; }
+  .progress-pct { font-size: 0.7rem; color: var(--muted); text-align: right; margin-top: 3px; }
+
+  /* Toggle switches */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .toggle-label { font-size: 0.84rem; font-weight: 500; color: var(--ink); }
+  .toggle-sub { font-size: 0.72rem; color: var(--muted); }
+  .toggle {
+    position: relative;
+    width: 40px; height: 22px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 99px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle input:checked + .toggle-slider { background: var(--emerald); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+  /* Publish button */
+  .publish-actions { display: flex; gap: 12px; }
+  .btn-publish {
+    flex: 1;
+    padding: 13px;
+    background: var(--emerald);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-publish:hover { background: var(--emerald-dark); }
+  .btn-publish:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-draft {
+    padding: 13px 18px;
+    background: var(--off-white);
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-draft:hover { border-color: var(--muted); color: var(--ink); }
+
+  /* ── ARTICLES LIST ── */
+  .articles-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .articles-search {
+    padding: 9px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.84rem;
+    color: var(--ink);
+    outline: none;
+    width: 240px;
+    transition: border-color 0.2s;
+  }
+  .articles-search:focus { border-color: var(--emerald); }
+  .btn-new {
+    padding: 9px 18px;
+    background: var(--emerald);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-new:hover { background: var(--emerald-dark); }
+
+  .article-row {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    transition: box-shadow 0.2s;
+  }
+  .article-row:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+  .article-row-img {
+    width: 72px; height: 56px;
+    border-radius: 8px;
+    background: var(--off-white);
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+  }
+  .article-row-img img { width: 100%; height: 100%; object-fit: cover; }
+  .article-row-body { flex: 1; min-width: 0; }
+  .article-row-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .article-row-title {
+    font-family: var(--font-display);
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .article-row-meta { font-size: 0.72rem; color: var(--muted); }
+  .article-row-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .row-btn {
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.2s;
+  }
+  .row-btn.edit { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .row-btn.edit:hover { background: #dbeafe; }
+  .row-btn.delete { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; }
+  .row-btn.delete:hover { background: #fee2e2; }
+
+  /* Badges */
+  .row-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .row-badge.cat-Politics { background: #fee2e2; color: #b91c1c; }
+  .row-badge.cat-Entertainment { background: #fef3c7; color: #92400e; }
+  .row-badge.cat-Health { background: #d1fae5; color: #065f46; }
+  .row-badge.cat-Education { background: #dbeafe; color: #1e40af; }
+  .row-badge.cat-Security { background: #f3e8ff; color: #6b21a8; }
+  .badge-breaking { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+  .badge-featured { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+  .row-status { font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .row-status.published { background: #d1fae5; color: #065f46; }
+  .row-status.draft { background: #f1f5f9; color: #64748b; }
+
+  .loading-msg, .empty-msg {
+    padding: 40px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    background: var(--white);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    padding: 13px 20px;
+    border-radius: 10px;
+    font-family: var(--font-ui);
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--dark);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    z-index: 999;
+    pointer-events: none;
+    max-width: 340px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--emerald); }
+  .toast.error { background: var(--red); }
+  .toast.info { background: var(--dark3); }
+
+  /* ── SETTINGS ── */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .settings-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+  }
+  .settings-card h3 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--emerald);
+    color: var(--ink);
+  }
+  .settings-card label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .settings-card input {
+    width: 100%;
+    padding: 9px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.86rem;
+    color: var(--ink);
+    background: var(--off-white);
+    outline: none;
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+  .settings-card input:focus { border-color: var(--emerald); }
+  .btn-save {
+    padding: 9px 20px;
+    background: var(--emerald);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-save:hover { background: var(--emerald-dark); }
+
+  .char-count { font-size: 0.72rem; color: var(--muted); text-align: right; margin-top: 4px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .compose-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .settings-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .sidebar { width: 64px; }
+    .sidebar-brand-name, .sidebar-brand-sub, .tab-btn span:not(.tab-icon),
+    .admin-email, .sidebar-section-label { display: none; }
+    .tab-btn { justify-content: center; padding: 10px; }
+    .sidebar-footer .admin-info { justify-content: center; }
+    .sidebar-footer .admin-email { display: none; }
+    .tab-panels { padding: 20px 16px; }
+    .top-bar { padding: 14px 16px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .article-row-actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo">NI</div>
+      <div class="login-brand-text">
+        <div class="brand-name">Naija Insights</div>
+        <div class="brand-sub">Admin Portal</div>
+      </div>
+    </div>
+    <h2>Welcome back</h2>
+    <p>Sign in to manage your news content</p>
+
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="loginEmail" placeholder="admin@naijainsights.com.ng" onkeydown="loginKeydown(event)">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••••" onkeydown="loginKeydown(event)">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Sign In to Dashboard</button>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div id="dashboardScreen">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" role="navigation" aria-label="Admin navigation">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">NI</div>
+      <div>
+        <div class="sidebar-brand-name">Naija Insights</div>
+        <div class="sidebar-brand-sub">Admin</div>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="sidebar-section-label">Content</div>
+      <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
+        <span class="tab-icon">📊</span><span>Overview</span>
+      </button>
+      <button class="tab-btn" data-tab="compose" onclick="switchTab('compose')">
+        <span class="tab-icon">✏️</span><span>Write Article</span>
+      </button>
+      <button class="tab-btn" data-tab="articles" onclick="switchTab('articles')">
+        <span class="tab-icon">📰</span><span>All Articles</span>
+      </button>
+
+      <div class="sidebar-section-label">Manage</div>
+      <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')">
+        <span class="tab-icon">⚙️</span><span>Settings</span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="admin-info">
+        <div class="admin-avatar">👤</div>
+        <div class="admin-email" id="adminEmail"></div>
+      </div>
+      <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main-content">
+    <div class="top-bar">
+      <h1 id="topBarTitle">Overview</h1>
+      <div class="top-bar-right">
+        <a href="index.html" target="_blank" class="view-site-btn">🌐 View Site</a>
+      </div>
+    </div>
+
+    <div class="tab-panels">
+
+      <!-- ── OVERVIEW ── -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="stats-row">
+          <div class="stat-card accent">
+            <div class="stat-icon">📰</div>
+            <div class="stat-value" id="statTotal">—</div>
+            <div class="stat-label">Total Articles</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value" id="statPublished">—</div>
+            <div class="stat-label">Published</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value" id="statDrafts">—</div>
+            <div class="stat-label">Drafts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🔴</div>
+            <div class="stat-value" id="statBreaking">—</div>
+            <div class="stat-label">Breaking News</div>
+          </div>
+        </div>
+
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;">
+          <h3 style="font-family:var(--font-display);font-weight:900;font-size:1.05rem;margin-bottom:16px;color:var(--ink);">Quick Actions</h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn-new" onclick="switchTab('compose')">✏️ Write New Article</button>
+            <button class="btn-new" style="background:var(--dark2);" onclick="switchTab('articles')">📋 Manage Articles</button>
+          </div>
+          <div style="margin-top:20px;padding:16px;background:var(--emerald-light);border-radius:10px;">
+            <p style="font-size:0.84rem;color:var(--emerald-dark);font-weight:500;line-height:1.6;">
+              💡 <strong>Tip:</strong> After publishing an article, it will appear live on the public website immediately. Use the <em>Breaking News</em> toggle to push urgent stories to the ticker, and <em>Featured</em> to place an article in the hero section.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── COMPOSE ── -->
+      <div class="tab-panel" id="tab-compose">
+        <div class="compose-grid">
+
+          <!-- Left: Article fields -->
+          <div class="compose-main">
+
+            <div class="field-card">
+              <label>Article Title <span class="required">*</span></label>
+              <input type="text" id="artTitle" placeholder="Enter a clear, compelling headline…">
+            </div>
+
+            <div class="field-card">
+              <label>Short Excerpt <span class="required">*</span></label>
+              <input type="text" id="artExcerpt" placeholder="One or two sentences summarising the story…">
+              <p class="field-hint">Shown in article cards on the homepage.</p>
+            </div>
+
+            <div class="field-card">
+              <label>Article Body <span class="required">*</span></label>
+              <textarea id="artBody" placeholder="Write the full article here…" oninput="updateWordCount()"></textarea>
+              <div class="char-count" id="charCount">0 words</div>
+            </div>
+
+          </div>
+
+          <!-- Right: Metadata -->
+          <div class="compose-aside">
+
+            <!-- Publish actions -->
+            <div class="field-card">
+              <label>Status</label>
+              <select id="artStatus">
+                <option value="published">Publish Now</option>
+                <option value="draft">Save as Draft</option>
+              </select>
+              <div style="height:14px;"></div>
+              <div class="publish-actions">
+                <button class="btn-publish" id="publishBtn" onclick="publishArticle()">🚀 Publish Article</button>
+              </div>
+            </div>
+
+            <!-- Category & Author -->
+            <div class="field-card">
+              <label>Category <span class="required">*</span></label>
+              <select id="artCategory">
+                <option value="">Select category…</option>
+                <option value="Politics">🏛️ Politics</option>
+                <option value="Entertainment">🎭 Entertainment</option>
+                <option value="Health">🏥 Health</option>
+                <option value="Education">📚 Education</option>
+                <option value="Security">🛡️ Security</option>
+              </select>
+              <div style="height:14px;"></div>
+              <label>Author Name <span class="required">*</span></label>
+              <input type="text" id="artAuthor" placeholder="e.g. Adaeze Okonkwo">
+            </div>
+
+            <!-- Cover image URL -->
+            <div class="field-card">
+              <label>Cover Image URL</label>
+              <input
+                type="url"
+                id="artImageURL"
+                placeholder="https://example.com/image.jpg"
+                oninput="previewImageURL(this)"
+                style="margin-bottom:10px;"
+              >
+              <div id="urlStatus" style="font-size:0.72rem;margin-bottom:10px;min-height:16px;"></div>
+              <!-- Preview area -->
+              <div style="border:2px dashed var(--border);border-radius:10px;overflow:hidden;min-height:130px;display:flex;align-items:center;justify-content:center;background:var(--off-white);">
+                <div id="imagePlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;">
+                  <span style="font-size:2rem;">🖼️</span>
+                  <p style="font-size:0.78rem;color:var(--muted);text-align:center;">Paste an image URL above to preview the cover</p>
+                </div>
+                <img id="imagePreview" alt="Cover preview" style="display:none;width:100%;max-height:180px;object-fit:cover;">
+              </div>
+              <p style="font-size:0.72rem;color:var(--muted);margin-top:8px;line-height:1.5;">
+                💡 Upload your image to <a href="https://imgbb.com" target="_blank" style="color:var(--emerald);font-weight:600;">ImgBB.com</a> (free), copy the <strong>Direct Link</strong>, and paste it here.
+              </p>
+            </div>
+
+            <!-- Flags -->
+            <div class="field-card">
+              <label>Article Flags</label>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Breaking News</div>
+                  <div class="toggle-sub">Adds to the live ticker</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="artBreaking">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <div>
+                  <div class="toggle-label">Featured Story</div>
+                  <div class="toggle-sub">Shows in hero section</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="artFeatured">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ARTICLES LIST ── -->
+      <div class="tab-panel" id="tab-articles">
+        <div class="articles-toolbar">
+          <input class="articles-search" type="search" placeholder="🔍  Search articles…">
+          <button class="btn-new" onclick="switchTab('compose')">+ New Article</button>
+        </div>
+        <div id="articleList">
+          <div class="loading-msg">Loading articles…</div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS ── -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>Site Information</h3>
+            <label>Site Name</label>
+            <input type="text" id="settingSiteName" placeholder="Naija Insights">
+            <label>Tagline</label>
+            <input type="text" id="settingTagline" placeholder="Nigerias Pulse">
+            <label>Contact Email</label>
+            <input type="email" id="settingEmail" placeholder="hello@naijainsights.com.ng">
+            <button class="btn-save" onclick="saveSettings()">Save Changes</button>
+          </div>
+          <div class="settings-card">
+            <h3>Admin Account</h3>
+            <label>Display Name</label>
+            <input type="text" id="settingDisplayName" placeholder="Editor in Chief">
+            <label>New Password</label>
+            <input type="password" id="settingNewPass" placeholder="Leave blank to keep current">
+            <label>Confirm Password</label>
+            <input type="password" id="settingConfirmPass" placeholder="Repeat new password">
+            <button class="btn-save" onclick="updateAdminAccount()">Update Account</button>
+          </div>
+          <div class="settings-card">
+            <h3>Social Media</h3>
+            <label>Twitter / X URL</label>
+            <input type="url" id="settingTwitter" placeholder="https://x.com/naijainsights">
+            <label>Facebook URL</label>
+            <input type="url" id="settingFacebook" placeholder="https://facebook.com/naijainsights">
+            <label>Instagram URL</label>
+            <input type="url" id="settingInstagram" placeholder="https://instagram.com/naijainsights">
+            <button class="btn-save" onclick="saveSettings()">Save Links</button>
+          </div>
+          <div class="settings-card">
+            <h3>Firebase Config</h3>
+            <p style="font-size:0.8rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">
+              Paste your Firebase project credentials into the <code style="background:var(--off-white);padding:2px 6px;border-radius:4px;font-size:0.78rem;">firebaseConfig</code> object at the top of <strong>admin.html</strong> and <strong>index.html</strong> to connect your database.
+            </p>
+            <a href="https://console.firebase.google.com" target="_blank" class="btn-save" style="display:inline-block;text-decoration:none;">Open Firebase Console →</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // Update top bar title on tab switch
+  const tabTitles = {
+    overview: 'Overview',
+    compose: 'Write Article',
+    articles: 'All Articles',
+    settings: 'Settings'
+  };
+  const origSwitch = window.switchTab;
+  window.switchTab = (tab) => {
+    origSwitch(tab);
+    document.getElementById('topBarTitle').textContent = tabTitles[tab] || tab;
+    if (tab === 'settings') loadSettings();
+  };
+
+  // Update admin password
+  window.updateAdminAccount = async () => {
+    const newPass    = document.getElementById('settingNewPass').value;
+    const confirmPass = document.getElementById('settingConfirmPass').value;
+    if (!newPass) { alert('Please enter a new password.'); return; }
+    if (newPass !== confirmPass) { alert('Passwords do not match.'); return; }
+    if (newPass.length < 6) { alert('Password must be at least 6 characters.'); return; }
+    try {
+      const { updatePassword } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      await updatePassword(getAuth().currentUser, newPass);
+      toast('Password updated successfully! ✅');
+      document.getElementById('settingNewPass').value = '';
+      document.getElementById('settingConfirmPass').value = '';
+    } catch(e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  };
+</script>
+</body>
+</html>
