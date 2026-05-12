@@ -76,6 +76,7 @@
       buildMoreStories(published.slice(4, 10));
       buildTrending(published);
       buildMostViewed(published);
+if (window.setArticlesCache) window.setArticlesCache(published);
 
     } catch(e) {
       console.error('Firebase error:', e);
