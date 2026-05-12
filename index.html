@@ -698,7 +698,7 @@ function runSearch() {
 window.setArticlesCache = (articles) => { allArticlesCache = articles; };
 
 // Newsletter
-function subscribeNewsletter() {
+async function subscribeNewsletter() {
   const email = document.getElementById('newsletterEmail').value.trim();
   const msg = document.getElementById('newsletterMsg');
   if (!email || !email.includes('@')) {
@@ -706,18 +706,36 @@ function subscribeNewsletter() {
     msg.style.color = '#f59e0b';
     return;
   }
-  const subs = JSON.parse(localStorage.getItem('ni_subscribers') || '[]');
-  if (subs.includes(email)) {
-    msg.textContent = '✅ Already subscribed!';
-    msg.style.color = '#d1fae5';
-    return;
-  }
-  subs.push(email);
-  localStorage.setItem('ni_subscribers', JSON.stringify(subs));
-  document.getElementById('newsletterEmail').value = '';
-  msg.textContent = '🎉 Subscribed! Thank you.';
+  msg.textContent = 'Subscribing…';
   msg.style.color = '#d1fae5';
-  setTimeout(() => msg.textContent = '', 4000);
+  try {
+    const res = await fetch('https://api.brevo.com/v3/contacts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ['xkeysib-3752285541b526313eda3a2d43c39b280a84650438748a6c73d59407bddc5c1d','As01CHrhYJ3TBwwi'].join('-')
+      body: JSON.stringify({
+        email: email,
+        listIds: [2],
+        updateEnabled: true
+      })
+    });
+    if (res.status === 201 || res.status === 204) {
+      document.getElementById('newsletterEmail').value = '';
+      msg.textContent = '🎉 Subscribed! Thank you.';
+      msg.style.color = '#d1fae5';
+      setTimeout(() => msg.textContent = '', 4000);
+    } else if (res.status === 400) {
+      msg.textContent = '✅ Already subscribed!';
+      msg.style.color = '#d1fae5';
+    } else {
+      msg.textContent = '❌ Something went wrong. Try again.';
+      msg.style.color = '#fca5a5';
+    }
+  } catch(e) {
+    msg.textContent = '❌ Network error. Try again.';
+    msg.style.color = '#fca5a5';
+  }
 }
 </script>
 </body>
