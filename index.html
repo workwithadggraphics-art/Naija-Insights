@@ -634,7 +634,16 @@
     <div class="footer-bottom-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Sitemap</a></div>
   </div>
 </footer>
-
+<!-- SEARCH OVERLAY -->
+<div id="searchOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;align-items:flex-start;justify-content:center;padding-top:80px;">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:600px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <input type="search" id="searchInput" placeholder="Search articles…" oninput="runSearch()" style="flex:1;padding:12px 16px;border:2px solid #e5e7eb;border-radius:10px;font-family:var(--font-ui);font-size:1rem;outline:none;">
+      <button onclick="closeSearch()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#6b7280;">✕</button>
+    </div>
+    <div id="searchResults" style="max-height:400px;overflow-y:auto;"></div>
+  </div>
+</div>
 <script>
   // Date
   document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-NG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -642,6 +651,73 @@
   function openNav(){const n=document.getElementById('mobileNav');n.style.display='flex';requestAnimationFrame(()=>n.classList.add('open'));document.body.style.overflow='hidden';}
   function closeNav(){const n=document.getElementById('mobileNav');n.classList.remove('open');setTimeout(()=>n.style.display='none',300);document.body.style.overflow='';}
   function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
+// Search
+let allArticlesCache = [];
+function openSearch() {
+  document.getElementById('searchOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('searchInput').focus(), 100);
+}
+function closeSearch() {
+  document.getElementById('searchOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+}
+document.getElementById('searchOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeSearch();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
+function runSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const results = document.getElementById('searchResults');
+  if (!q) { results.innerHTML = ''; return; }
+  const matches = allArticlesCache.filter(a =>
+    (a.title||'').toLowerCase().includes(q) ||
+    (a.excerpt||'').toLowerCase().includes(q) ||
+    (a.category||'').toLowerCase().includes(q) ||
+    (a.author||'').toLowerCase().includes(q)
+  );
+  if (matches.length === 0) {
+    results.innerHTML = '<p style="font-family:var(--font-ui);font-size:0.88rem;color:#6b7280;padding:16px 0;">No articles found.</p>';
+    return;
+  }
+  results.innerHTML = matches.slice(0,8).map(a => `
+    <div onclick="location.href='article.html?id=${a.id}';closeSearch();" style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f6;cursor:pointer;align-items:center;">
+      <div style="width:56px;height:48px;border-radius:8px;background:#d1fae5;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;overflow:hidden;">
+        ${a.imageURL ? `<img src="${a.imageURL}" style="width:100%;height:100%;object-fit:cover;">` : '📰'}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:'Playfair Display',serif;font-size:0.88rem;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.title}</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:0.7rem;color:#6b7280;">${a.category} · ${a.author}</div>
+      </div>
+    </div>
+  `).join('');
+}
+window.setArticlesCache = (articles) => { allArticlesCache = articles; };
+
+// Newsletter
+function subscribeNewsletter() {
+  const email = document.getElementById('newsletterEmail').value.trim();
+  const msg = document.getElementById('newsletterMsg');
+  if (!email || !email.includes('@')) {
+    msg.textContent = '⚠️ Please enter a valid email.';
+    msg.style.color = '#f59e0b';
+    return;
+  }
+  const subs = JSON.parse(localStorage.getItem('ni_subscribers') || '[]');
+  if (subs.includes(email)) {
+    msg.textContent = '✅ Already subscribed!';
+    msg.style.color = '#d1fae5';
+    return;
+  }
+  subs.push(email);
+  localStorage.setItem('ni_subscribers', JSON.stringify(subs));
+  document.getElementById('newsletterEmail').value = '';
+  msg.textContent = '🎉 Subscribed! Thank you.';
+  msg.style.color = '#d1fae5';
+  setTimeout(() => msg.textContent = '', 4000);
+}
 </script>
 </body>
 </html>
