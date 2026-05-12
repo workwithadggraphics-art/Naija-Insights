@@ -174,23 +174,46 @@
   }
 
   // ── Send newsletter email via Brevo ──
-  async function sendNewsletterEmail(title, category, articleId) {
-    const siteURL = 'https://naijainsights.workwithadggraphics.workers.dev';
-    const articleLink = siteURL + '/article.html?id=' + articleId;
-    const BREVO_KEY = ['xkeysib-3752285541b526313eda3a2d43c39b280a84650438748a6c73d59407bddc5c1d','As01CHrhYJ3TBwwi'].join('-');
-    try {
-      const res = await fetch('https://api.brevo.com/v3/emailCampaigns', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': BREVO_KEY
-        },
-        body: JSON.stringify({
-          name: 'Article: ' + title.substring(0, 50) + ' ' + Date.now(),
-          subject: '📰 New on Naija Insights: ' + title,
-          sender: { name: 'Naija Insights', email: 'workwithadggraphics@gmail.com' },
-          type: 'classic',
-          htmlContent: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;"><div style="background:#059669;padding:20px;border-radius:12px 12px 0 0;text-align:center;"><h1 style="color:#fff;font-size:1.5rem;margin:0;">Naija Insights</h1><p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:0.85rem;">Nigeria's Pulse</p></div><div style="background:#fff;padding:28px;border:1px solid #e5e7eb;border-top:none;"><span style="background:#d1fae5;color:#065f46;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;">' + category + '</span><h2 style="font-size:1.4rem;color:#111827;margin:16px 0 12px;line-height:1.3;">' + title + '</h2><p style="color:#6b7280;font-size:0.9rem;line-height:1.6;margin-bottom:24px;">A new article has just been published on Naija Insights.</p><a href="' + articleLink + '" style="display:inline-block;background:#059669;color:#fff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:0.9rem;text-decoration:none;">Read Full Article →</a></div><div style="background:#f9fafb;padding:16px;border-radius:0 0 12px 12px;text-align:center;border:1px solid #e5e7eb;border-top:none;"><p style="font-size:0.75rem;color:#9ca3af;margin:0;">You are receiving this because you subscribed to Naija Insights.<br>© 2026 Naija Insights. Made in Nigeria 🇳🇬</p></div></div>',
+async function sendNewsletterEmail(title, category, articleId) {
+  const siteURL = 'https://naijainsights.workwithadggraphics.workers.dev';
+  const articleLink = siteURL + '/article.html?id=' + articleId;
+  const BREVO_KEY = ['xkeysib-3752285541b526313eda3a2d43c39b280a84650438748a6c73d59407bddc5c1d','As01CHrhYJ3TBwwi'].join('-');
+  const emailHTML = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">'
+    + '<div style="background:#059669;padding:20px;text-align:center;">'
+    + '<h1 style="color:#fff;margin:0;">Naija Insights</h1>'
+    + '<p style="color:#fff;opacity:0.8;margin:4px 0 0;">Nigeria Pulse</p>'
+    + '</div>'
+    + '<div style="background:#fff;padding:28px;">'
+    + '<h2 style="color:#111827;">' + title + '</h2>'
+    + '<p style="color:#6b7280;">A new article has just been published on Naija Insights.</p>'
+    + '<a href="' + articleLink + '" style="display:inline-block;background:#059669;color:#fff;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;">Read Full Article</a>'
+    + '</div>'
+    + '<div style="background:#f9fafb;padding:16px;text-align:center;">'
+    + '<p style="font-size:0.75rem;color:#9ca3af;">You subscribed to Naija Insights. 2026 Naija Insights. Made in Nigeria.</p>'
+    + '</div></div>';
+  try {
+    await fetch('https://api.brevo.com/v3/emailCampaigns', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': BREVO_KEY
+      },
+      body: JSON.stringify({
+        name: 'Article ' + Date.now(),
+        subject: 'New on Naija Insights: ' + title,
+        sender: { name: 'Naija Insights', email: 'workwithadggraphics@gmail.com' },
+        type: 'classic',
+        htmlContent: emailHTML,
+        recipients: { listIds: [2] },
+        scheduledAt: new Date(Date.now() + 60000).toISOString()
+      })
+    });
+    toast('Subscribers notified by email!');
+  } catch(e) {
+    console.error('Email error:', e);
+  }
+}
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;"><div style="background:#059669;padding:20px;border-radius:12px 12px 0 0;text-align:center;"><h1 style="color:#fff;font-size:1.5rem;margin:0;">Naija Insights</h1><p style="color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:0.85rem;">Nigeria's Pulse</p></div><div style="background:#fff;padding:28px;border:1px solid #e5e7eb;border-top:none;"><span style="background:#d1fae5;color:#065f46;font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;">' + category + '</span><h2 style="font-size:1.4rem;color:#111827;margin:16px 0 12px;line-height:1.3;">' + title + '</h2><p style="color:#6b7280;font-size:0.9rem;line-height:1.6;margin-bottom:24px;">A new article has just been published on Naija Insights.</p><a href="' + articleLink + '" style="display:inline-block;background:#059669;color:#fff;padding:12px 28px;border-radius:8px;font-weight:700;font-size:0.9rem;text-decoration:none;">Read Full Article →</a></div><div style="background:#f9fafb;padding:16px;border-radius:0 0 12px 12px;text-align:center;border:1px solid #e5e7eb;border-top:none;"><p style="font-size:0.75rem;color:#9ca3af;margin:0;">You are receiving this because you subscribed to Naija Insights.<br>© 2026 Naija Insights. Made in Nigeria 🇳🇬</p></div></div>',
           recipients: { listIds: [2] },
           scheduledAt: new Date(Date.now() + 60000).toISOString()
         })
