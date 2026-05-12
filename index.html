@@ -472,7 +472,7 @@
       <a href="index.html?cat=Security">Security</a>
     </nav>
     <div class="header-right">
-      <button class="btn-search" aria-label="Search">
+      <button class="btn-search" aria-label="Search" onclick="openSearch()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
       <button class="btn-subscribe">Subscribe</button>
@@ -556,9 +556,9 @@
         <div class="sidebar-widget newsletter-widget">
           <div class="widget-title">✉️ Daily Briefing</div>
           <p>Get the top 5 Nigerian stories delivered to your inbox every morning. Free, no spam.</p>
-          <input class="newsletter-input" type="email" placeholder="Your email address">
-          <button class="newsletter-btn">Subscribe Now</button>
-        </div>
+        <input class="newsletter-input" type="email" id="newsletterEmail" placeholder="Your email address">
+<button class="newsletter-btn" onclick="subscribeNewsletter()">Subscribe Now</button>
+<div id="newsletterMsg" style="font-size:0.75rem;margin-top:8px;min-height:16px;"></div>
         <div class="sidebar-widget">
           <div class="widget-title">👁 Most Viewed</div>
           <div id="mostViewedList">
