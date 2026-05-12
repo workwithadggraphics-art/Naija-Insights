@@ -1291,7 +1291,7 @@ window.editArticle = async (id) => {
            <input type="text" id="settingTagline" placeholder="Nigeria's Pulse">
             <label>Contact Email</label>
             <input type="email" id="settingEmail" placeholder="hello@naijainsights.com.ng">
-            <button class="btn-save">Save Changes</button>
+         <button class="btn-save" onclick="saveSettings()">Save Changes</button>
           </div>
           <div class="settings-card">
             <h3>Admin Account</h3>
@@ -1308,8 +1308,7 @@ window.editArticle = async (id) => {
             <label>Twitter / X URL</label>
             <input type="url" id="settingTwitter" placeholder="https://x.com/naijainsights">            <label>Facebook URL</label>
             <input type="url" id="settingFacebook" placeholder="https://facebook.com/naijainsights">            <label>Instagram URL</label>
-            <input type="url" id="settingInstagram" placeholder="https://instagram.com/naijainsights">            <button class="btn-save">Save Links</button>
-          </div>
+            <input type="url" id="settingInstagram" placeholder="https://instagram.com/naijainsights">            <button class="btn-save" onclick="saveSettings()">Save Links</button>   </div>
           <div class="settings-card">
             <h3>Firebase Config</h3>
             <p style="font-size:0.8rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">
