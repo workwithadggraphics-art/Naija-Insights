@@ -166,7 +166,40 @@ const firebaseConfig = {
     document.getElementById('urlStatus').textContent = '';
     document.getElementById('charCount').textContent = '0 words';
   }
+// ── Settings ──
+window.saveSettings = async () => {
+  const data = {
+    siteName:  document.getElementById('settingSiteName').value.trim(),
+    tagline:   document.getElementById('settingTagline').value.trim(),
+    email:     document.getElementById('settingEmail').value.trim(),
+    twitter:   document.getElementById('settingTwitter').value.trim(),
+    facebook:  document.getElementById('settingFacebook').value.trim(),
+    instagram: document.getElementById('settingInstagram').value.trim(),
+  };
+  try {
+    await updateDoc(doc(db, 'settings', 'site'), data);
+    toast('Settings saved! ✅');
+  } catch(e) {
+    const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await setDoc(doc(db, 'settings', 'site'), data);
+    toast('Settings saved! ✅');
+  }
+};
 
+window.loadSettings = async () => {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'site'));
+    if (snap.exists()) {
+      const s = snap.data();
+      if (s.siteName)  document.getElementById('settingSiteName').value  = s.siteName;
+      if (s.tagline)   document.getElementById('settingTagline').value   = s.tagline;
+      if (s.email)     document.getElementById('settingEmail').value     = s.email;
+      if (s.twitter)   document.getElementById('settingTwitter').value   = s.twitter;
+      if (s.facebook)  document.getElementById('settingFacebook').value  = s.facebook;
+      if (s.instagram) document.getElementById('settingInstagram').value = s.instagram;
+    }
+  } catch(e) { console.log('No settings yet.'); }
+};
   // ── Load Articles ──
   window.loadArticles = async () => {
     const list = document.getElementById('articleList');
@@ -1335,10 +1368,11 @@ window.editArticle = async (id) => {
     settings: 'Settings'
   };
   const origSwitch = window.switchTab;
-  window.switchTab = (tab) => {
-    origSwitch(tab);
-    document.getElementById('topBarTitle').textContent = tabTitles[tab] || tab;
-  };
+window.switchTab = (tab) => {
+  origSwitch(tab);
+  document.getElementById('topBarTitle').textContent = tabTitles[tab] || tab;
+  if (tab === 'settings') loadSettings();
+};
 </script>
 </body>
 </html>
