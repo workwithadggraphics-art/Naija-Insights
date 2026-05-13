@@ -53,6 +53,7 @@
       show('dashboardScreen');
       document.getElementById('adminEmail').textContent = user.email;
       loadArticles();
+      loadSettings();
     } else {
       show('loginScreen');
       hide('dashboardScreen');
