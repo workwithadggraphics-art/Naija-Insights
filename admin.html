@@ -273,8 +273,8 @@
           </div>
           <div class="article-row-actions">
             <button class="row-btn edit" onclick="editArticle('${docSnap.id}')">✏️ Edit</button>
-            <button class="row-btn delete" onclick="deleteArticle('${docSnap.id}')">🗑️ Delete</button>
-          </div>
+<button class="row-btn" style="background:#eff6ff;color:#1e40af;border:1.5px solid #bfdbfe;" onclick="viewComments('${docSnap.id}', '${d.title}')">💬 Comments</button>
+<button class="row-btn delete" onclick="deleteArticle('${docSnap.id}')">🗑️ Delete</button>
         `;
         list.appendChild(card);
       });
@@ -301,7 +301,58 @@
     const map = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️' };
     return map[cat] || '📰';
   }
+// ── View & Delete Comments ──
+  window.viewComments = async (articleId, articleTitle) => {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:900;">Comments</h3>
+          <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;">✕</button>
+        </div>
+        <p style="font-family:var(--font-ui);font-size:0.8rem;color:var(--muted);margin-bottom:16px;">${articleTitle}</p>
+        <div id="adminCommentsList">Loading comments…</div>
+      </div>
+    `;
+    document.body.appendChild(modal);
 
+    try {
+      const q = query(collection(db, 'articles', articleId, 'comments'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      const list = document.getElementById('adminCommentsList');
+      if (snap.empty) {
+        list.innerHTML = '<p style="font-family:var(--font-ui);font-size:0.84rem;color:var(--muted);">No comments yet.</p>';
+        return;
+      }
+      list.innerHTML = snap.docs.map(d => {
+        const c = d.data();
+        const date = c.createdAt ? new Date(c.createdAt.seconds * 1000).toLocaleDateString('en-NG', { day:'numeric', month:'short', year:'numeric' }) : 'Just now';
+        return `
+          <div style="padding:12px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+            <div>
+              <div style="font-family:var(--font-ui);font-size:0.82rem;font-weight:700;color:var(--ink);">${c.name || 'Anonymous'} <span style="font-weight:400;color:var(--muted);">· ${date}</span></div>
+              <div style="font-family:var(--font-ui);font-size:0.84rem;color:var(--mid-grey);margin-top:4px;">${c.text}</div>
+            </div>
+            <button onclick="deleteComment('${articleId}','${d.id}',this)" style="background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5;border-radius:6px;padding:4px 10px;font-size:0.72rem;font-weight:600;cursor:pointer;flex-shrink:0;">Delete</button>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      document.getElementById('adminCommentsList').innerHTML = 'Error loading comments.';
+    }
+  };
+
+  window.deleteComment = async (articleId, commentId, btn) => {
+    if (!confirm('Delete this comment?')) return;
+    try {
+      await deleteDoc(doc(db, 'articles', articleId, 'comments', commentId));
+      btn.closest('div[style*=padding]').remove();
+      toast('Comment deleted.', 'info');
+    } catch(e) {
+      toast('Error deleting comment: ' + e.message, 'error');
+    }
+  };
   // ── Delete ──
   window.deleteArticle = async (id) => {
     if (!confirm('Delete this article? This cannot be undone.')) return;
