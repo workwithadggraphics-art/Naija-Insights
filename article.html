@@ -696,7 +696,29 @@
     </div>
   </div>
 </div>
+<!-- COMMENTS SECTION -->
+<div class="comments-section">
+  <div class="article-wrap" style="padding-top:0;">
 
+    <div class="section-header" style="margin-top:40px;">
+      <h2 class="section-title">Comments <span id="commentsCount"></span></h2>
+    </div>
+
+    <!-- Comment Form -->
+    <div class="comment-form">
+      <input type="text" id="commentName" placeholder="Your name (optional — leave blank for Anonymous)" class="comment-input">
+      <textarea id="commentText" placeholder="Share your thoughts…" class="comment-textarea"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <span id="commentMsg" style="font-family:var(--font-ui);font-size:0.8rem;"></span>
+        <button id="commentBtn" class="comment-submit" onclick="postComment(articleId)">Post Comment</button>
+      </div>
+    </div>
+
+    <!-- Comments List -->
+    <div id="commentsList" style="margin-top:24px;"></div>
+
+  </div>
+</div>
 <!-- RELATED ARTICLES -->
 <div class="related-section" id="relatedSection">
   <div class="related-header">
