@@ -12,7 +12,7 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, limit, where, updateDoc, increment }
+  import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, orderBy, limit, where, updateDoc, increment, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // ─── FIREBASE CONFIG ───
@@ -214,7 +214,76 @@
       document.getElementById('relatedSection').style.display = 'none';
     }
   }
+// ── Comments ──
+  async function loadComments(articleId) {
+    const commentsEl = document.getElementById('commentsList');
+    const countEl = document.getElementById('commentsCount');
+    try {
+      const q = query(
+        collection(db, 'articles', articleId, 'comments'),
+        orderBy('createdAt', 'desc')
+      );
+      const snap = await getDocs(q);
+      if (countEl) countEl.textContent = snap.size + ' comment' + (snap.size !== 1 ? 's' : '');
+      if (snap.empty) {
+        commentsEl.innerHTML = '<p style="font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);padding:20px 0;">No comments yet. Be the first to share your thoughts!</p>';
+        return;
+      }
+      commentsEl.innerHTML = snap.docs.map(d => {
+        const c = d.data();
+        const date = c.createdAt ? new Date(c.createdAt.seconds * 1000).toLocaleDateString('en-NG', { day:'numeric', month:'short', year:'numeric' }) : 'Just now';
+        const initials = (c.name || 'A').charAt(0).toUpperCase();
+        return `
+          <div class="comment-item" id="comment-${d.id}">
+            <div class="comment-avatar">${initials}</div>
+            <div class="comment-body">
+              <div class="comment-header">
+                <span class="comment-name">${c.name || 'Anonymous'}</span>
+                <span class="comment-date">${date}</span>
+              </div>
+              <p class="comment-text">${c.text}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch(e) {
+      console.error('Comments error:', e);
+    }
+  }
 
+  async function postComment(articleId) {
+    const nameEl = document.getElementById('commentName');
+    const textEl = document.getElementById('commentText');
+    const btnEl  = document.getElementById('commentBtn');
+    const msgEl  = document.getElementById('commentMsg');
+    const name = nameEl.value.trim();
+    const text = textEl.value.trim();
+    if (!text) {
+      msgEl.textContent = 'Please write a comment first.';
+      msgEl.style.color = 'var(--red, #ef4444)';
+      return;
+    }
+    btnEl.disabled = true;
+    btnEl.textContent = 'Posting…';
+    try {
+      await addDoc(collection(db, 'articles', articleId, 'comments'), {
+        name: name || 'Anonymous',
+        text: text,
+        createdAt: serverTimestamp()
+      });
+      nameEl.value = '';
+      textEl.value = '';
+      msgEl.textContent = '✅ Comment posted!';
+      msgEl.style.color = 'var(--emerald)';
+      setTimeout(() => msgEl.textContent = '', 3000);
+      loadComments(articleId);
+    } catch(e) {
+      msgEl.textContent = '❌ Error posting. Try again.';
+      msgEl.style.color = '#ef4444';
+    }
+    btnEl.disabled = false;
+    btnEl.textContent = 'Post Comment';
+  }
   function show404() {
     document.getElementById('articleSkeleton').style.display = 'none';
     document.getElementById('notFound').style.display = 'flex';
