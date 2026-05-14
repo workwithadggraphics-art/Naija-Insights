@@ -316,7 +316,24 @@
   body { font-family: var(--font-body); background: var(--off-white); color: var(--ink); line-height: 1.7; -webkit-font-smoothing: antialiased; }
   img { display: block; max-width: 100%; }
   a { text-decoration: none; color: inherit; }
-
+/* COMMENTS */
+  .comments-section { background: var(--white); border-top: 1px solid var(--border-grey); margin-top: 40px; padding: 40px 0; }
+  .comment-form { background: var(--off-white); border: 1px solid var(--border-grey); border-radius: 12px; padding: 20px; margin-bottom: 8px; }
+  .comment-input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border-grey); border-radius: 8px; font-family: var(--font-ui); font-size: 0.88rem; color: var(--ink); background: var(--white); outline: none; margin-bottom: 12px; transition: border-color 0.2s; }
+  .comment-input:focus { border-color: var(--emerald); }
+  .comment-textarea { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border-grey); border-radius: 8px; font-family: var(--font-ui); font-size: 0.88rem; color: var(--ink); background: var(--white); outline: none; min-height: 100px; resize: vertical; margin-bottom: 12px; transition: border-color 0.2s; }
+  .comment-textarea:focus { border-color: var(--emerald); }
+  .comment-submit { padding: 10px 24px; background: var(--emerald); color: #fff; border: none; border-radius: 8px; font-family: var(--font-ui); font-weight: 700; font-size: 0.86rem; cursor: pointer; transition: background 0.2s; }
+  .comment-submit:hover { background: var(--emerald-dark); }
+  .comment-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .comment-item { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--border-grey); }
+  .comment-item:last-child { border-bottom: none; }
+  .comment-avatar { width: 40px; height: 40px; background: var(--emerald); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 900; font-size: 1rem; color: #fff; flex-shrink: 0; }
+  .comment-body { flex: 1; }
+  .comment-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .comment-name { font-family: var(--font-ui); font-size: 0.86rem; font-weight: 700; color: var(--ink); }
+  .comment-date { font-family: var(--font-ui); font-size: 0.72rem; color: var(--light-grey); }
+  .comment-text { font-size: 0.92rem; line-height: 1.6; color: var(--mid-grey); }
   /* READING PROGRESS */
   .read-progress-bar {
     position: fixed;
