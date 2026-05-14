@@ -286,8 +286,10 @@
   }
   function show404() {
     document.getElementById('articleSkeleton').style.display = 'none';
-    document.getElementById('notFound').style.display = 'flex';
+    document.getElementById('articleContent').style.display = 'flex';
   }
+// Load comments
+      loadComments(articleId);
 
   loadArticle();
 </script>
