@@ -215,7 +215,7 @@ const articleId = window.articleId;
     }
   }
 // ── Comments ──
-  async function loadComments(articleId) {
+  window.loadComments = async function(articleId) {
     const commentsEl = document.getElementById('commentsList');
     const countEl = document.getElementById('commentsCount');
     try {
@@ -251,7 +251,7 @@ const articleId = window.articleId;
     }
   }
 
-  async function postComment(articleId) {
+  window.postComment = async function(articleId) {
     const nameEl = document.getElementById('commentName');
     const textEl = document.getElementById('commentText');
     const btnEl  = document.getElementById('commentBtn');
