@@ -54,8 +54,8 @@
 
   // ── Get article ID from URL ──
   const params = new URLSearchParams(location.search);
-  const articleId = params.get('id');
-
+window.articleId = params.get('id');
+const articleId = window.articleId;
   if (!articleId) {
     location.href = 'index.html';
   }
@@ -727,7 +727,7 @@
       <textarea id="commentText" placeholder="Share your thoughts…" class="comment-textarea"></textarea>
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
         <span id="commentMsg" style="font-family:var(--font-ui);font-size:0.8rem;"></span>
-        <button id="commentBtn" class="comment-submit" onclick="postComment(articleId)">Post Comment</button>
+        <button id="commentBtn" class="comment-submit" onclick="postComment(window.articleId)">Post Comment</button>
       </div>
     </div>
 
