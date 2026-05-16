@@ -30,8 +30,8 @@
   const db  = getFirestore(app);
 
   // ── Utilities ──
-  const catEmoji = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️' };
-  const catClass = { Politics:'cat-politics', Entertainment:'cat-entertainment', Health:'cat-health', Education:'cat-education', Security:'cat-security' };
+  const catEmoji = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️', Sports:'⚽' };
+  const catClass = { Politics:'cat-politics', Entertainment:'cat-entertainment', Health:'cat-health', Education:'cat-education', Security:'cat-security', Sports:'cat-sports' };
 
   function timeAgo(ts) {
     if (!ts) return '';
@@ -418,6 +418,7 @@ const articleId = window.articleId;
   .cat-education { background: #dbeafe; color: #1e40af; }
   .cat-security { background: #f3e8ff; color: #6b21a8; }
   .cat-general { background: var(--emerald-light); color: var(--emerald-dark); }
+  .cat-sports { background: #dcfce7; color: #166534; }
   .breaking-badge { display: none; align-items: center; gap: 5px; background: #b91c1c; color: #fff; font-family: var(--font-ui); font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; }
   .breaking-badge .bdot { width: 5px; height: 5px; background: #fff; border-radius: 50%; animation: pulse 1.2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -609,6 +610,7 @@ const articleId = window.articleId;
       <a href="index.html?cat=Health">Health</a>
       <a href="index.html?cat=Education">Education</a>
       <a href="index.html?cat=Security">Security</a>
+      <a href="index.html?cat=Sports">Sports</a>
     </nav>
     <div class="header-right">
       <button class="btn-subscribe">Subscribe</button>
@@ -627,6 +629,7 @@ const articleId = window.articleId;
     <a href="index.html?cat=Health">🏥 Health</a>
     <a href="index.html?cat=Education">📚 Education</a>
     <a href="index.html?cat=Security">🛡️ Security</a>
+    <a href="index.html?cat=Sports">⚽ Sports</a>
   </div>
 </div>
 
