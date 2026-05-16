@@ -29,9 +29,8 @@
   const db  = getFirestore(app);
 
   // ── Utilities ──
-  const catEmoji = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️' };
-  const catClass = { Politics:'cat-politics', Entertainment:'cat-entertainment', Health:'cat-health', Education:'cat-education', Security:'cat-security' };
-
+  const catEmoji = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️', Sports:'⚽' };
+  const catClass = { Politics:'cat-politics', Entertainment:'cat-entertainment', Health:'cat-health', Education:'cat-education', Security:'cat-security', Sports:'cat-sports' };
   function timeAgo(ts) {
     if (!ts) return 'Just now';
     const secs = Math.floor((Date.now() - ts.seconds * 1000) / 1000);
