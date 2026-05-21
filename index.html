@@ -66,8 +66,12 @@
       snap.forEach(d => articles.push({ id: d.id, ...d.data() }));
 
       // Filter published only — done in JS to avoid needing a composite index
-      const published = articles.filter(a => a.status === 'published');
-
+      // Filter by status and category if provided
+      const published = articles.filter(a => {
+        if (a.status !== 'published') return false;
+        if (catFilter && a.category !== catFilter) return false;
+        return true;
+      });
       if (published.length === 0) {
         showEmptyState();
         return;
