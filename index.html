@@ -67,14 +67,21 @@
 
       // Filter published only — done in JS to avoid needing a composite index
       // Filter by status and category if provided
+      const urlParams = new URLSearchParams(location.search);
+      const catFilter = urlParams.get('cat');
+
       const published = articles.filter(a => {
         if (a.status !== 'published') return false;
         if (catFilter && a.category?.toLowerCase() !== catFilter.toLowerCase()) return false;
+        return true;
       });
-    
+
       if (published.length === 0) {
         if (catFilter) {
-          document.getElementById('heroSection').innerHTML = '<div style="padding:40px 0;text-align:center;"><h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:8px;">No ' + catFilter + ' articles yet</h2><p style="font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);">Check back soon or <a href="index.html" style="color:var(--emerald);">browse all news</a></p></div>';
+          const hs = document.getElementById('heroSection');
+          if (hs) hs.innerHTML = '<div style="padding:60px 0;text-align:center;"><h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:8px;">No ' + catFilter + ' articles yet</h2><p style="font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);">Check back soon or <a href="index.html" style="color:var(--emerald);font-weight:600;">browse all news</a></p></div>';
+          document.getElementById('latestGrid').innerHTML = '';
+          document.getElementById('moreStoriesList').innerHTML = '';
         } else {
           showEmptyState();
         }
@@ -88,8 +95,7 @@
       }
 
       buildTicker(published.filter(a => a.breaking));
-      buildTicker(published.filter(a => a.breaking));
-      buildHero(published);
+      if (!catFilter) buildHero(published);
       buildLatestGrid(published.slice(0, 8));
       buildMoreStories(published.slice(4, 10));
       buildTrending(published);
