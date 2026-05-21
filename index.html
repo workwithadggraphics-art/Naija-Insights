@@ -85,10 +85,19 @@
         }
       }
       if (published.length === 0) {
-        showEmptyState();
+        if (catFilter) {
+          document.getElementById('heroSection').innerHTML = `
+            <div style="padding:40px 0;text-align:center;">
+              <div style="font-size:3rem;margin-bottom:16px;">📭</div>
+              <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:8px;">No ${catFilter} articles yet</h2>
+              <p style="font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);">Check back soon or <a href="index.html" style="color:var(--emerald);font-weight:600;">browse all news</a></p>
+            </div>
+          `;
+        } else {
+          showEmptyState();
+        }
         return;
       }
-
       buildTicker(published.filter(a => a.breaking));
       buildHero(published);
       buildLatestGrid(published.slice(0, 8));
