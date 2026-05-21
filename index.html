@@ -75,14 +75,10 @@
         return;
       }
 
-      if (catFilter) {
-        document.title = catFilter + ' - Naija Insights';
-        const hs = document.getElementById('heroSection');
-        if (hs) hs.innerHTML = '<div style="padding:32px 0 16px;"><h1 style="font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--ink);">' + catFilter + ' <span style="color:var(--emerald);">News</span></h1><p style="font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);margin-top:6px;">Latest ' + catFilter + ' stories from Naija Insights</p></div>';
-      }
+      
 
       buildTicker(published.filter(a => a.breaking));
-      if (!catFilter) buildHero(published);
+      buildHero(published);
       buildLatestGrid(published.slice(0, 8));
       buildMoreStories(published.slice(4, 10));
       buildTrending(published);
