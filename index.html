@@ -63,18 +63,13 @@
       snap.forEach(d => articles.push({ id: d.id, ...d.data() }));
      
       // Filter published only — done in JS to avoid needing a composite index
-      // Filter by status and category if provided
-      const urlParams = new URLSearchParams(location.search);
-      const catFilter = urlParams.get('cat');
-
+      
       const published = articles.filter(a => a.status === 'published');
 
       if (published.length === 0) {
         showEmptyState();
         return;
       }
-
-      
 
       buildTicker(published.filter(a => a.breaking));
       buildHero(published);
