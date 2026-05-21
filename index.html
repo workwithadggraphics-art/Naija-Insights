@@ -691,7 +691,18 @@ padding:15px 20px;
   function openNav(){const n=document.getElementById('mobileNav');n.style.display='flex';requestAnimationFrame(()=>n.classList.add('open'));document.body.style.overflow='hidden';}
   function closeNav(){const n=document.getElementById('mobileNav');n.classList.remove('open');setTimeout(()=>n.style.display='none',300);document.body.style.overflow='';}
   function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
-
+// Highlight active nav link based on category
+  const urlParams = new URLSearchParams(location.search);
+  const activeCat = urlParams.get('cat');
+  if (activeCat) {
+    document.querySelectorAll('nav a').forEach(a => {
+      if (a.href.includes('cat=' + activeCat)) {
+        a.classList.add('active');
+      } else {
+        a.classList.remove('active');
+      }
+    });
+  }
   // Search
   let allArticlesCache = [];
   function openSearch() {
