@@ -68,7 +68,7 @@
       // Filter published only — done in JS to avoid needing a composite index
       // Filter by status and category if provided
       const urlParams = new URLSearchParams(location.search);
-      const catFilter = navUrlParams.get('cat');
+      const catFilter = urlParams.get('cat');
 
       const published = articles.filter(a => {
         if (a.status !== 'published') return false;
