@@ -69,8 +69,7 @@
       // Filter by status and category if provided
       const published = articles.filter(a => {
         if (a.status !== 'published') return false;
-        if (catFilter && a.category !== catFilter) return false;
-        return true;
+        if (catFilter && a.category?.toLowerCase() !== catFilter.toLowerCase()) return false;
       });
       // Update page title if filtering by category
       if (catFilter) {
