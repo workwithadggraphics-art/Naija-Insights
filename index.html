@@ -68,7 +68,7 @@
       // Filter published only — done in JS to avoid needing a composite index
       // Filter by status and category if provided
       const urlParams = new URLSearchParams(location.search);
-      const catFilter = urlParams.get('cat');
+      const catFilter = navUrlParams.get('cat');
 
       const published = articles.filter(a => {
         if (a.status !== 'published') return false;
@@ -697,7 +697,7 @@ padding:15px 20px;
   function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
 // Highlight active nav link based on category
   const urlParams = new URLSearchParams(location.search);
-  const activeCat = urlParams.get('cat');
+  const activeCat = navUrlParams.get('cat');
   if (activeCat) {
     document.querySelectorAll('nav a').forEach(a => {
       if (a.href.includes('cat=' + activeCat)) {
