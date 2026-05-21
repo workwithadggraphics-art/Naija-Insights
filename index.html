@@ -61,8 +61,7 @@
       const snap = await getDocs(q);
       const articles = [];
       snap.forEach(d => articles.push({ id: d.id, ...d.data() }));
-      document.title = 'Fetched: ' + articles.length + ' articles';
-
+     
       // Filter published only — done in JS to avoid needing a composite index
       // Filter by status and category if provided
       const urlParams = new URLSearchParams(location.search);
