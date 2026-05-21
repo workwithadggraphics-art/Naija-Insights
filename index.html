@@ -52,6 +52,10 @@
   // ── Main loader ──
   async function loadAll() {
     try {
+      // Check if a category filter is in the URL
+      const urlParams = new URLSearchParams(location.search);
+      const catFilter = urlParams.get('cat');
+
       const q = query(
         collection(db, 'articles'),
         orderBy('createdAt', 'desc'),
