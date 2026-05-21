@@ -78,7 +78,19 @@
       buildTrending(published);
       buildMostViewed(published);
       // Expose to search
-      if (window.setArticlesCache) window.setArticlesCache(published);
+      if (window.setArticlesCache) window.setArticlesCache(published);// Category filter — applied after load
+const _catParam = new URLSearchParams(window.location.search).get('cat');
+if (_catParam) {
+  document.title = _catParam + ' - Naija Insights';
+  const hs = document.getElementById('heroSection');
+  if (hs) hs.innerHTML = '<div style="padding:32px 0 16px;"><h1 style="font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--ink);">' + _catParam + ' <span style="color:var(--emerald);">News</span></h1><p style="font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);margin-top:6px;">Latest ' + _catParam + ' stories from Naija Insights</p></div>';
+  document.querySelectorAll('.article-card').forEach(card => {
+    const badge = card.querySelector('.category-badge');
+    if (badge && badge.textContent.toLowerCase() !== _catParam.toLowerCase()) {
+      card.style.display = 'none';
+    }
+  });
+}
 } catch(e) {
       console.error('Firebase error:', e);
       showFallback();
