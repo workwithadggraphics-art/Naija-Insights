@@ -72,6 +72,19 @@
         if (catFilter && a.category !== catFilter) return false;
         return true;
       });
+      // Update page title if filtering by category
+      if (catFilter) {
+        document.title = catFilter + ' — Naija Insights';
+        const heroSection = document.getElementById('heroSection');
+        if (heroSection) {
+          heroSection.innerHTML = `
+            <div style="padding:32px 0 16px;">
+              <h1 style="font-family:var(--font-display);font-size:2rem;font-weight:900;color:var(--ink);">${catFilter} <span style="color:var(--emerald);">News</span></h1>
+              <p style="font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);margin-top:6px;">Latest ${catFilter} stories from Naija Insights</p>
+            </div>
+          `;
+        }
+      }
       if (published.length === 0) {
         showEmptyState();
         return;
