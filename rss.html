@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+<pre id="feed"></pre>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy, limit }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCoc6cZeyK-QnRigxT9KSU9fk5kFAyCJc",
+    authDomain: "naija-insights.firebaseapp.com",
+    projectId: "naija-insights",
+    storageBucket: "naija-insights.firebasestorage.app",
+    messagingSenderId: "620443477759",
+    appId: "1:620443477759:web:5ff1a76f4e0392532bceca"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  const siteURL = 'https://naijainsights.workwithadggraphics.workers.dev';
+
+  async function buildRSS() {
+    const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'), limit(20));
+    const snap = await getDocs(q);
+    const items = [];
+    snap.forEach(d => {
+      const a = d.data();
+      if (a.status !== 'published') return;
+      const date = a.createdAt ? new Date(a.createdAt.seconds * 1000).toUTCString() : new Date().toUTCString();
+      items.push(`
+    <item>
+      <title><![CDATA[${a.title}]]></title>
+      <link>${siteURL}/article.html?id=${d.id}</link>
+      <guid>${siteURL}/article.html?id=${d.id}</guid>
+      <pubDate>${date}</pubDate>
+      <category>${a.category}</category>
+      <description><![CDATA[${a.excerpt || a.title}]]></description>
+    </item>`);
+    });
+
+    const rss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Naija Insights</title>
+    <link>${siteURL}</link>
+    <description>Nigeria Pulse — Latest news on politics, entertainment, health, education, security and sports</description>
+    <language>en-ng</language>
+    <atom:link href="${siteURL}/rss.html" rel="self" type="application/rss+xml"/>
+    ${items.join('')}
+  </channel>
+</rss>`;
+
+    document.getElementById('feed').textContent = rss;
+    document.title = 'RSS Feed';
+  }
+
+  buildRSS();
+</script>
+</body>
+</html>
