@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Naija Insights</title>
+    <link>https://naijainsights.workwithadggraphics.workers.dev</link>
+    <description>Nigeria's Pulse — Latest news on politics, entertainment, health, education, security and sports</description>
+    <language>en-ng</language>
+    <atom:link href="https://naijainsights.workwithadggraphics.workers.dev/rss.xml" rel="self" type="application/rss+xml"/>
+  </channel>
+</rss>
