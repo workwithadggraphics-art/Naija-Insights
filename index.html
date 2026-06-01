@@ -57,7 +57,7 @@
       const q = query(
         collection(db, 'articles'),
         orderBy('createdAt', 'desc'),
-        limit(30)
+        limit(100)
       );
       const snap = await getDocs(q);
       const articles = [];
@@ -574,7 +574,7 @@ padding:15px 20px;
       <div>
         <div class="section-header">
           <h2 class="section-title">Latest <span>News</span></h2>
-         <a href="#" class="section-link" id="viewAllLink">View all →</a>
+         <a href="" class="section-link" id="viewAllLink">View all →</a>
         </div>
         <div class="article-grid" id="latestGrid">
           <div class="skeleton skel-card"></div>
