@@ -719,7 +719,7 @@ padding:15px 20px;
     });
   }
   // Search
-  let allArticlesCache = [];
+  window.allArticlesCache = [];
   function openSearch() {
     document.getElementById('searchOverlay').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -740,7 +740,7 @@ padding:15px 20px;
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
     const results = document.getElementById('searchResults');
     if (!q) { results.innerHTML = ''; return; }
-    const matches = allArticlesCache.filter(a =>
+    const matches = window.allArticlesCache.filter(a =>
       (a.title||'').toLowerCase().includes(q) ||
       (a.excerpt||'').toLowerCase().includes(q) ||
       (a.category||'').toLowerCase().includes(q) ||
@@ -764,7 +764,7 @@ padding:15px 20px;
   }
 
   // Expose articles cache to search — populated by Firebase loadAll
-  window.setArticlesCache = (articles) => { allArticlesCache = articles; };
+  window.setArticlesCache = (articles) => { window.allArticlesCache = articles; };
 
   // Newsletter subscription — Brevo integration
   async function subscribeNewsletter() {
