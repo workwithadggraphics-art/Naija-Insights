@@ -120,6 +120,25 @@ const articleId = window.articleId;
       setText('authorInitials', initials);
       setText('authorName2', a.author);
       setText('authorDate2', fullDate(a.createdAt));
+// Video embed
+if (a.videoURL) {
+  const videoEl = document.getElementById('articleVideo');
+  if (videoEl) {
+    let embedURL = a.videoURL;
+    // Convert YouTube watch URL to embed URL
+    if (embedURL.includes('youtube.com/watch?v=')) {
+      embedURL = embedURL.replace('youtube.com/watch?v=', 'youtube.com/embed/');
+    } else if (embedURL.includes('youtu.be/')) {
+      embedURL = embedURL.replace('youtu.be/', 'youtube.com/embed/');
+    }
+    videoEl.innerHTML = `
+      <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;margin-bottom:24px;">
+        <iframe src="${embedURL}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:12px;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+      </div>
+    `;
+    videoEl.style.display = 'block';
+  }
+}
 
       // Body — preserve paragraphs
       const bodyEl = document.getElementById('articleBody');
@@ -612,6 +631,7 @@ const articleId = window.articleId;
       <a href="index.html?cat=Education">Education</a>
       <a href="index.html?cat=Security">Security</a>
       <a href="index.html?cat=Sports">Sports</a>
+      <a href="videos.html">Videos</a>
     </nav>
     <div class="header-right">
       <button class="btn-subscribe">Subscribe</button>
