@@ -131,6 +131,7 @@
     const body     = document.getElementById('artBody').value.trim();
     const status   = document.getElementById('artStatus').value;
     const imageURL = document.getElementById('artImageURL').value.trim();
+const videoURL = document.getElementById('artVideoURL').value.trim();
     const breaking = document.getElementById('artBreaking').checked;
     const featured = document.getElementById('artFeatured').checked;
 
@@ -1392,6 +1393,10 @@
               <label>Author Name <span class="required">*</span></label>
               <input type="text" id="artAuthor" placeholder="e.g. Adaeze Okonkwo">
             </div>
+             <label>Video URL (optional)</label>
+<input type="url" id="artVideoURL" placeholder="https://youtube.com/watch?v=... or any video link">
+<p class="field-hint">Paste a YouTube, Facebook or TikTok video link to embed a video in the article.</p>
+<div style="height:10px;"></div>
 
             <!-- Cover image URL -->
             <div class="field-card">
