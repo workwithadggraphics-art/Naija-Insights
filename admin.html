@@ -143,7 +143,7 @@ const videoURL = document.getElementById('artVideoURL').value.trim();
     try {
       const docRef = await addDoc(collection(db, 'articles'), {
         title, category, author, excerpt, body,
-        imageURL, status, breaking, featured,
+        imageURL, videoURL, status, breaking, featured,
         readTime: Math.ceil(body.split(' ').length / 200) + ' min read',
         createdAt: serverTimestamp(),
         views: 0
@@ -165,7 +165,7 @@ const videoURL = document.getElementById('artVideoURL').value.trim();
   };
 
   function resetForm() {
-    ['artTitle','artAuthor','artExcerpt','artBody','artImageURL'].forEach(id => document.getElementById(id).value = '');
+    ['artTitle','artAuthor','artExcerpt','artBody','artImageURL', 'artVideoURL'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('artCategory').value = '';
     document.getElementById('artStatus').value = 'published';
     document.getElementById('artBreaking').checked = false;
