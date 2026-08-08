@@ -757,10 +757,15 @@ padding:15px 20px;
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSearch(); });
 
   function runSearch() {
-    const q = document.getElementById('searchInput').value.trim().toLowerCase();
-    const results = document.getElementById('searchResults');
-    if (!q) { results.innerHTML = ''; return; }
-    const matches = window.allArticlesCache.filter(a =>
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const results = document.getElementById('searchResults');
+  if (!q) { results.innerHTML = ''; return; }
+  const cache = window.allArticlesCache || [];
+  if (cache.length === 0) {
+    results.innerHTML = '<p style="font-family:var(--font-ui);font-size:0.88rem;color:#6b7280;padding:16px 0;">Please wait — articles are still loading. Try again in a moment.</p>';
+    return;
+  }
+  const matches = cache.filter(a =>
       (a.title||'').toLowerCase().includes(q) ||
       (a.excerpt||'').toLowerCase().includes(q) ||
       (a.category||'').toLowerCase().includes(q) ||
