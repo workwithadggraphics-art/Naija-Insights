@@ -741,10 +741,14 @@ padding:15px 20px;
   // Search
   window.allArticlesCache = [];
   function openSearch() {
-    document.getElementById('searchOverlay').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    setTimeout(() => document.getElementById('searchInput').focus(), 100);
+  document.getElementById('searchOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('searchInput').focus(), 100);
+  const cache = window.allArticlesCache || [];
+  if (cache.length === 0) {
+    document.getElementById('searchResults').innerHTML = '<p style="font-family:var(--font-ui);font-size:0.88rem;color:#6b7280;padding:16px 0;">Loading articles — please type to search once loaded.</p>';
   }
+}
   function closeSearch() {
     document.getElementById('searchOverlay').style.display = 'none';
     document.body.style.overflow = '';
