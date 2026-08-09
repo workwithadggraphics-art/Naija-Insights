@@ -94,8 +94,8 @@ else {
       buildMoreStories(published.slice(4, 10));
       buildTrending(published);
       buildMostViewed(published);
-      // Expose to search
-      if (window.setArticlesCache) window.setArticlesCache(published);// // Category filter — applied after load with delay
+      // Directly populate cache from inside module
+window.allArticlesCache = published;// // Category filter — applied after load with delay
 setTimeout(() => {
   const _catParam = new URLSearchParams(window.location.search).get('cat');
   if (_catParam) {
