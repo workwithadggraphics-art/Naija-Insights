@@ -57,7 +57,7 @@
       const q = query(
         collection(db, 'articles'),
         orderBy('createdAt', 'desc'),
-        limit(100)
+        limit(500)
       );
       const snap = await getDocs(q);
       const articles = [];
