@@ -454,7 +454,11 @@ function escapeHTML(value) {
       parsed.hostname === 'twitter.com' ||
       parsed.hostname === 'www.twitter.com'
     ) {
-      return parsed.href;
+      const match = parsed.pathname.match(/^\/([^/]+)\/status\/(\d+)/);
+
+      if (match) {
+        return `https://x.com/${match[1]}/status/${match[2]}`;
+      }
     }
 
     return null;
