@@ -291,6 +291,48 @@
     `;
   }
 }
+
+  function createVideoCard(video) {
+
+  const category = (video.category || 'General').toLowerCase();
+
+  return `
+    <article
+      class="video-card"
+      data-category="${escapeHTML(category)}"
+    >
+
+      <div class="video-thumb">
+        <div class="video-thumb-inner">
+          <div class="cat-icon">
+            ${getCategoryIcon(category)}
+          </div>
+        </div>
+
+        <div class="play-overlay">
+          <span>▶</span>
+        </div>
+      </div>
+
+      <div class="video-info">
+
+        <div class="video-category">
+          ${escapeHTML(video.category || 'General')}
+        </div>
+
+        <h3 class="video-title">
+          ${escapeHTML(video.title || 'Untitled Video')}
+        </h3>
+
+        <p class="video-meta">
+          ${escapeHTML(video.author || 'Naija Insights')}
+        </p>
+
+      </div>
+
+    </article>
+  `;
+}
   function filterVideos(cat, btn) {
     document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
