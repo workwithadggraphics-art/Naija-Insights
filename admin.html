@@ -446,6 +446,7 @@ const videoURL = document.getElementById('artVideoURL').value.trim();
     const body     = document.getElementById('artBody').value.trim();
     const status   = document.getElementById('artStatus').value;
     const imageURL = document.getElementById('artImageURL').value.trim();
+    const videoURL = document.getElementById('artVideoURL').value.trim();
     const breaking = document.getElementById('artBreaking').checked;
     const featured = document.getElementById('artFeatured').checked;
 
@@ -456,7 +457,7 @@ const videoURL = document.getElementById('artVideoURL').value.trim();
     try {
       await updateDoc(doc(db, 'articles', editingId), {
         title, category, author, excerpt, body,
-        imageURL, status, breaking, featured,
+        imageURL, videoURL, status, breaking, featured,
         readTime: Math.ceil(body.split(' ').length / 200) + ' min read',
       });
       toast('Article updated successfully! ✅');
