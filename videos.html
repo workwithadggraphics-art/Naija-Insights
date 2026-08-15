@@ -204,7 +204,31 @@
   </div>
 </footer>
 
-<script>
+<script type="module">
+
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+
+  import {
+    getFirestore,
+    collection,
+    getDocs,
+    query,
+    orderBy
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCoc6cZeyK-QnRigxT9KSU9fk5kFAyCJc",
+    authDomain: "naija-insights.firebaseapp.com",
+    projectId: "naija-insights",
+    storageBucket: "naija-insights.firebasestorage.app",
+    messagingSenderId: "620443477759",
+    appId: "1:620443477759:web:5ff1a76f4e0392532bceca"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   function openNav(){const n=document.getElementById('mobileNav');n.style.display='flex';requestAnimationFrame(()=>n.classList.add('open'));document.body.style.overflow='hidden';}
   function closeNav(){const n=document.getElementById('mobileNav');n.classList.remove('open');setTimeout(()=>n.style.display='none',300);document.body.style.overflow='';}
   function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
