@@ -225,17 +225,19 @@
 </footer>
 
 <script type="module">
-
-  import { initializeApp }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getFirestore,
     collection,
     getDocs,
     query,
+    where,
     orderBy
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ─────────────────────────────────────────
+  // FIREBASE CONFIG
+  // ─────────────────────────────────────────
 
   const firebaseConfig = {
     apiKey: "AIzaSyDCoc6cZeyK-QnRigxT9KSU9fk5kFAyCJc",
@@ -249,288 +251,364 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  function openNav(){const n=document.getElementById('mobileNav');n.style.display='flex';requestAnimationFrame(()=>n.classList.add('open'));document.body.style.overflow='hidden';}
-  function closeNav(){const n=document.getElementById('mobileNav');n.classList.remove('open');setTimeout(()=>n.style.display='none',300);document.body.style.overflow='';}
-  function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
 
-   async function loadVideos() {
-  const videoGrid = document.getElementById('videoGrid');
+  // ─────────────────────────────────────────
+  // MOBILE NAVIGATION
+  // ─────────────────────────────────────────
 
-  try {
-    const videosQuery = query(
-      collection(db, 'articles'),
-      orderBy('createdAt', 'desc')
-    );
+  window.openNav = function () {
+    const n = document.getElementById('mobileNav');
 
-    const snapshot = await getDocs(videosQuery);
+    if (!n) return;
 
-    const videos = [];
+    n.style.display = 'flex';
 
-    snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-
-      if (
-        data.status === 'published' &&
-        data.videoURL &&
-        data.videoURL.trim() !== ''
-      ) {
-        videos.push({
-          id: docSnap.id,
-          ...data
-        });
-      }
+    requestAnimationFrame(() => {
+      n.classList.add('open');
     });
 
-    if (videos.length === 0) {
+    document.body.style.overflow = 'hidden';
+  };
+
+
+  window.closeNav = function () {
+    const n = document.getElementById('mobileNav');
+
+    if (!n) return;
+
+    n.classList.remove('open');
+
+    setTimeout(() => {
+      n.style.display = 'none';
+    }, 300);
+
+    document.body.style.overflow = '';
+  };
+
+
+  window.closeNavOutside = function (e) {
+    const n = document.getElementById('mobileNav');
+
+    if (e.target === n) {
+      closeNav();
+    }
+  };
+
+
+  // ─────────────────────────────────────────
+  // VIDEO DATA
+  // ─────────────────────────────────────────
+
+  let allVideos = [];
+
+
+  // ─────────────────────────────────────────
+  // LOAD VIDEOS FROM FIREBASE
+  // ─────────────────────────────────────────
+
+  async function loadVideos() {
+
+    const videoGrid = document.getElementById('videoGrid');
+
+    if (!videoGrid) return;
+
+    // Loading state
+    videoGrid.className = 'coming-soon';
+    videoGrid.innerHTML = `
+      <div class="icon">🎬</div>
+      <h3>Loading Videos...</h3>
+      <p>Please wait while we load the latest videos.</p>
+    `;
+
+    try {
+
+      const q = query(
+        collection(db, 'articles'),
+        where('status', '==', 'published'),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+
+      allVideos = [];
+
+      snapshot.forEach(docSnap => {
+
+        const data = docSnap.data();
+
+        // Only articles that actually have a video URL
+        if (data.videoURL && data.videoURL.trim() !== '') {
+
+          allVideos.push({
+            id: docSnap.id,
+            ...data
+          });
+
+        }
+
+      });
+
+
+      if (allVideos.length === 0) {
+
+        showEmptyVideos();
+
+        return;
+      }
+
+
+      // Display all videos initially
+      renderVideos('all');
+
+
+    } catch (error) {
+
+      console.error('Error loading videos:', error);
+
+      videoGrid.className = 'coming-soon';
+
       videoGrid.innerHTML = `
-        <div class="coming-soon">
-          <div class="icon">🎬</div>
-          <h3>No Videos Yet</h3>
-          <p>
-            Video reports, interviews and analysis from Naija Insights
-            will appear here.
-          </p>
-        </div>
+        <div class="icon">⚠️</div>
+        <h3>Unable to Load Videos</h3>
+        <p>There was a problem loading the video section. Please try again later.</p>
       `;
+
+    }
+
+  }
+
+
+  // ─────────────────────────────────────────
+  // DISPLAY EMPTY STATE
+  // ─────────────────────────────────────────
+
+  function showEmptyVideos() {
+
+    const videoGrid = document.getElementById('videoGrid');
+
+    if (!videoGrid) return;
+
+    videoGrid.className = 'coming-soon';
+
+    videoGrid.innerHTML = `
+      <div class="icon">🎬</div>
+      <h3>Videos Coming Soon</h3>
+      <p>
+        Naija Insights TV is preparing video reports,
+        interviews and analysis from across Nigeria.
+      </p>
+      <a href="https://wa.me/2347045803223" target="_blank">
+        💬 Get Notified
+      </a>
+    `;
+
+  }
+
+
+  // ─────────────────────────────────────────
+  // X URL HANDLING
+  // ─────────────────────────────────────────
+
+  function getXUrl(url) {
+
+    if (!url) return '#';
+
+    return url.trim();
+
+  }
+
+
+  // ─────────────────────────────────────────
+  // CREATE VIDEO CARD
+  // ─────────────────────────────────────────
+
+  function createVideoCard(video) {
+
+    const card = document.createElement('article');
+
+    card.className = 'video-card';
+
+    const title = video.title || 'Naija Insights Video';
+
+    const category = video.category || 'News';
+
+    const excerpt =
+      video.excerpt ||
+      'Watch this video report from Naija Insights.';
+
+    const videoURL = getXUrl(video.videoURL);
+
+
+    card.innerHTML = `
+
+      <div class="video-thumb">
+
+        <div class="video-thumb-inner">
+
+          ${
+            video.imageURL
+              ? `<img
+                   src="${video.imageURL}"
+                   alt="${escapeHTML(title)}"
+                   style="width:100%;height:100%;object-fit:cover;"
+                 >`
+              : `<div class="cat-icon">🎬</div>`
+          }
+
+          <a
+            href="${videoURL}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="play-overlay"
+            aria-label="Watch video on X"
+          >
+
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <div class="video-card-body">
+
+        <div class="video-cat">
+          ${escapeHTML(category)}
+        </div>
+
+        <div class="video-title">
+          ${escapeHTML(title)}
+        </div>
+
+        <div class="video-meta">
+          ${escapeHTML(excerpt)}
+        </div>
+
+      </div>
+
+    `;
+
+
+    return card;
+
+  }
+
+
+  // ─────────────────────────────────────────
+  // RENDER VIDEOS
+  // ─────────────────────────────────────────
+
+  function renderVideos(category) {
+
+    const videoGrid = document.getElementById('videoGrid');
+
+    if (!videoGrid) return;
+
+
+    let filteredVideos = allVideos;
+
+
+    if (category !== 'all') {
+
+      filteredVideos = allVideos.filter(video => {
+
+        return (
+          (video.category || '').toLowerCase() ===
+          category.toLowerCase()
+        );
+
+      });
+
+    }
+
+
+    if (filteredVideos.length === 0) {
+
+      videoGrid.className = 'coming-soon';
+
+      videoGrid.innerHTML = `
+        <div class="icon">🎬</div>
+        <h3>No Videos Yet</h3>
+        <p>
+          There are currently no videos in this category.
+        </p>
+      `;
+
       return;
     }
 
-    videoGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
 
-    // Load featured video
-    loadFeaturedVideo(allVideos);
+    // Turn the container into the actual video grid
+    videoGrid.className = 'video-grid';
 
-  } catch (error) {
-    console.error('Error loading videos:', error);
+    videoGrid.innerHTML = '';
 
-    videoGrid.innerHTML = `
-      <div class="coming-soon">
-        <div class="icon">⚠️</div>
-        <h3>Unable to Load Videos</h3>
-        <p>Please refresh the page and try again.</p>
-      </div>
-    `;
-  }
-}
 
-function loadFeaturedVideo(videos) {
+    filteredVideos.forEach(video => {
 
-  const featured =
-    videos.find(video => video.featured === true) ||
-    videos[0];
+      videoGrid.appendChild(
+        createVideoCard(video)
+      );
 
-  const container = document.getElementById('featuredEmbed');
+    });
 
-  if (!featured) {
-    container.innerHTML = `
-      <div class="placeholder">
-        <div class="play-btn">▶</div>
-        <h3>Naija Insights TV</h3>
-        <p>Featured videos will appear here.</p>
-      </div>
-    `;
-    return;
   }
 
-  const xUrl = getXPostUrl(featured.videoURL);
 
-  if (xUrl) {
+  // ─────────────────────────────────────────
+  // FILTER BUTTONS
+  // ─────────────────────────────────────────
 
-    container.innerHTML = `
-      <blockquote class="twitter-tweet">
-        <a href="${escapeHTML(xUrl)}"></a>
-      </blockquote>
-    `;
+  window.filterVideos = function (cat, btn) {
 
-    loadXScript();
+    document
+      .querySelectorAll('.filter-tab')
+      .forEach(button => {
 
-  } else {
+        button.classList.remove('active');
 
-    container.innerHTML = `
-      <div class="placeholder">
-        <h3>${escapeHTML(featured.title || 'Featured Video')}</h3>
-        <p>Video source could not be embedded.</p>
-      </div>
-    `;
-  }
+      });
 
-  const title = document.querySelector('.featured-meta h2');
-  const description = document.querySelector('.featured-meta p');
 
-  if (title) {
-    title.textContent = featured.title || 'Featured Video';
-  }
+    if (btn) {
+      btn.classList.add('active');
+    }
 
-  if (description) {
-    description.textContent =
-      featured.excerpt ||
-      `${featured.category || 'News'} · ${featured.author || 'Naija Insights'}`;
-  }
-}
 
-  function createVideoCard(video) {
-  const category = (video.category || 'General').toLowerCase();
-  const xUrl = getXPostUrl(video.videoURL);
+    renderVideos(cat);
 
-  return `
-    <article
-      class="video-card"
-      data-category="${escapeHTML(category)}"
-    >
-
-      <div class="video-thumb">
-        ${
-          xUrl
-          ? `
-            <blockquote class="twitter-tweet">
-              <a href="${escapeHTML(xUrl)}"></a>
-            </blockquote>
-          `
-          : `
-            <div class="video-thumb-inner">
-              <div class="cat-icon">
-                ${getCategoryIcon(category)}
-              </div>
-            </div>
-          `
-        }
-      </div>
-
-      <div class="video-info">
-        <div class="video-category">
-          ${escapeHTML(video.category || 'General')}
-        </div>
-
-        <h3 class="video-title">
-          ${escapeHTML(video.title || 'Untitled Video')}
-        </h3>
-
-        <p class="video-meta">
-          ${escapeHTML(video.author || 'Naija Insights')}
-        </p>
-      </div>
-
-    </article>
-  `;
-}
-  videoGrid.innerHTML = allVideos
-  .map(video => createVideoCard(video))
-  .join('');
-
-loadXScript();
-  function getCategoryIcon(category) {
-
-  const icons = {
-    politics: '🏛️',
-    entertainment: '🎭',
-    health: '🏥',
-    education: '📚',
-    security: '🛡️',
-    sports: '⚽'
   };
 
-  return icons[category] || '🎬';
-}
 
+  // ─────────────────────────────────────────
+  // ESCAPE HTML
+  // ─────────────────────────────────────────
 
-function escapeHTML(value) {
+  function escapeHTML(value) {
 
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-  function getXPostUrl(url) {
-  if (!url) return null;
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
 
-  try {
-    const parsed = new URL(url);
-
-    if (
-      parsed.hostname === 'x.com' ||
-      parsed.hostname === 'www.x.com' ||
-      parsed.hostname === 'twitter.com' ||
-      parsed.hostname === 'www.twitter.com'
-    ) {
-      const match = parsed.pathname.match(/^\/([^/]+)\/status\/(\d+)/);
-
-      if (match) {
-        return `https://x.com/${match[1]}/status/${match[2]}`;
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
- function renderXPost(url) {
-  const xUrl = getXPostUrl(url);
-
-  if (!xUrl) return '';
-
-  return `
-    <blockquote class="twitter-tweet">
-      <a href="${escapeHTML(xUrl)}"></a>
-    </blockquote>
-  `;
-}
-
-  function loadXScript() {
-  if (window.twttr) {
-    window.twttr.widgets.load();
-    return;
   }
 
-  const script = document.createElement('script');
-  script.src = 'https://platform.twitter.com/widgets.js';
-  script.async = true;
-  script.charset = 'utf-8';
 
-  script.onload = () => {
-    if (window.twttr) {
-      window.twttr.widgets.load();
-    }
-  };
+  // ─────────────────────────────────────────
+  // START
+  // ─────────────────────────────────────────
 
-  document.head.appendChild(script);
-}
-  function filterVideos(category, button) {
-
-  document.querySelectorAll('.filter-tab').forEach(tab => {
-    tab.classList.remove('active');
-  });
-
-  button.classList.add('active');
-
-  document.querySelectorAll('.video-card').forEach(card => {
-
-    const cardCategory = card.dataset.category;
-
-    if (
-      category === 'all' ||
-      cardCategory === category
-    ) {
-      card.style.display = '';
-    } else {
-      card.style.display = 'none';
-    }
-
-  });
-
-  // Re-render X widgets that remain visible
-  if (window.twttr) {
-    window.twttr.widgets.load();
-  }
-}
   loadVideos();
-  // How to add a real video:
-  // 1. Upload video to YouTube
-  // 2. Get the video ID from the URL (e.g. youtube.com/watch?v=ABC123 → ID is ABC123)
-  // 3. Replace the placeholder div with:
-  //    <iframe src="https://www.youtube.com/embed/ABC123" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+
 </script>
 </body>
 </html>
