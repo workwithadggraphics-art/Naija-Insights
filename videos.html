@@ -337,6 +337,11 @@
     </article>
   `;
 }
+  videoGrid.innerHTML = allVideos
+  .map(video => createVideoCard(video))
+  .join('');
+
+loadXScript();
   function getCategoryIcon(category) {
 
   const icons = {
