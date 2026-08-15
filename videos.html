@@ -357,6 +357,37 @@ function escapeHTML(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+  function getXPostUrl(url) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+
+    if (
+      parsed.hostname === 'x.com' ||
+      parsed.hostname === 'www.x.com' ||
+      parsed.hostname === 'twitter.com' ||
+      parsed.hostname === 'www.twitter.com'
+    ) {
+      return parsed.href;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+ function renderXPost(url) {
+  const xUrl = getXPostUrl(url);
+
+  if (!xUrl) return '';
+
+  return `
+    <blockquote class="twitter-tweet">
+      <a href="${escapeHTML(xUrl)}"></a>
+    </blockquote>
+  `;
+}
   function filterVideos(cat, btn) {
     document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
