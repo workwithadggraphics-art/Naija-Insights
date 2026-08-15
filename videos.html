@@ -298,7 +298,7 @@
     videoGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
 
     // Load featured video
-    loadFeaturedVideo(videos);
+    loadFeaturedVideo(allvideos);
 
   } catch (error) {
     console.error('Error loading videos:', error);
@@ -310,6 +310,61 @@
         <p>Please refresh the page and try again.</p>
       </div>
     `;
+  }
+}
+
+function loadFeaturedVideo(videos) {
+
+  const featured =
+    videos.find(video => video.featured === true) ||
+    videos[0];
+
+  const container = document.getElementById('featuredEmbed');
+
+  if (!featured) {
+    container.innerHTML = `
+      <div class="placeholder">
+        <div class="play-btn">▶</div>
+        <h3>Naija Insights TV</h3>
+        <p>Featured videos will appear here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const xUrl = getXPostUrl(featured.videoURL);
+
+  if (xUrl) {
+
+    container.innerHTML = `
+      <blockquote class="twitter-tweet">
+        <a href="${escapeHTML(xUrl)}"></a>
+      </blockquote>
+    `;
+
+    loadXScript();
+
+  } else {
+
+    container.innerHTML = `
+      <div class="placeholder">
+        <h3>${escapeHTML(featured.title || 'Featured Video')}</h3>
+        <p>Video source could not be embedded.</p>
+      </div>
+    `;
+  }
+
+  const title = document.querySelector('.featured-meta h2');
+  const description = document.querySelector('.featured-meta p');
+
+  if (title) {
+    title.textContent = featured.title || 'Featured Video';
+  }
+
+  if (description) {
+    description.textContent =
+      featured.excerpt ||
+      `${featured.category || 'News'} · ${featured.author || 'Naija Insights'}`;
   }
 }
 
