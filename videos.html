@@ -388,6 +388,26 @@ function escapeHTML(value) {
     </blockquote>
   `;
 }
+
+  function loadXScript() {
+  if (window.twttr) {
+    window.twttr.widgets.load();
+    return;
+  }
+
+  const script = document.createElement('script');
+  script.src = 'https://platform.twitter.com/widgets.js';
+  script.async = true;
+  script.charset = 'utf-8';
+
+  script.onload = () => {
+    if (window.twttr) {
+      window.twttr.widgets.load();
+    }
+  };
+
+  document.head.appendChild(script);
+}
   function filterVideos(cat, btn) {
     document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
