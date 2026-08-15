@@ -379,8 +379,10 @@
       videoGrid.innerHTML = `
         <div class="icon">⚠️</div>
         <h3>Unable to Load Videos</h3>
-        <p>There was a problem loading the video section. Please try again later.</p>
-      `;
+        <<p>There was a problem loading the video section.</p>
+<small style="color:#999;">
+  ${escapeHTML(error.message || 'Unknown Firebase error')}
+</small>
 
     }
 
