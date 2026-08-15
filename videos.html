@@ -293,8 +293,8 @@
 }
 
   function createVideoCard(video) {
-
   const category = (video.category || 'General').toLowerCase();
+  const xUrl = getXPostUrl(video.videoURL);
 
   return `
     <article
@@ -303,19 +303,24 @@
     >
 
       <div class="video-thumb">
-        <div class="video-thumb-inner">
-          <div class="cat-icon">
-            ${getCategoryIcon(category)}
-          </div>
-        </div>
-
-        <div class="play-overlay">
-          <span>▶</span>
-        </div>
+        ${
+          xUrl
+          ? `
+            <blockquote class="twitter-tweet">
+              <a href="${escapeHTML(xUrl)}"></a>
+            </blockquote>
+          `
+          : `
+            <div class="video-thumb-inner">
+              <div class="cat-icon">
+                ${getCategoryIcon(category)}
+              </div>
+            </div>
+          `
+        }
       </div>
 
       <div class="video-info">
-
         <div class="video-category">
           ${escapeHTML(video.category || 'General')}
         </div>
@@ -327,7 +332,6 @@
         <p class="video-meta">
           ${escapeHTML(video.author || 'Naija Insights')}
         </p>
-
       </div>
 
     </article>
