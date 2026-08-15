@@ -323,11 +323,9 @@
     try {
 
       const q = query(
-        collection(db, 'articles'),
-        where('status', '==', 'published'),
-        orderBy('createdAt', 'desc')
-      );
-
+  collection(db, 'articles'),
+  where('status', '==', 'published')
+);
       const snapshot = await getDocs(q);
 
       allVideos = [];
