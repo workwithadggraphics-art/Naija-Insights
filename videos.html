@@ -333,6 +333,30 @@
     </article>
   `;
 }
+  function getCategoryIcon(category) {
+
+  const icons = {
+    politics: '🏛️',
+    entertainment: '🎭',
+    health: '🏥',
+    education: '📚',
+    security: '🛡️',
+    sports: '⚽'
+  };
+
+  return icons[category] || '🎬';
+}
+
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
   function filterVideos(cat, btn) {
     document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
