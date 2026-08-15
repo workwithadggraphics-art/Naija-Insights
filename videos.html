@@ -308,85 +308,153 @@
 
   async function loadVideos() {
 
-    const videoGrid = document.getElementById('videoGrid');
+  const videoGrid = document.getElementById('videoGrid');
 
-    if (!videoGrid) return;
+  if (!videoGrid) {
+    console.error('videoGrid element not found');
+    return;
+  }
 
-    // Loading state
-    videoGrid.className = 'coming-soon';
-    videoGrid.innerHTML = `
-      <div class="icon">🎬</div>
-      <h3>Loading Videos...</h3>
-      <p>Please wait while we load the latest videos.</p>
-    `;
+  videoGrid.className = 'coming-soon';
 
-    try {
+  videoGrid.innerHTML = `
+    <div class="icon">🎬</div>
+    <h3>Loading Videos...</h3>
+    <p>Connecting to Naija Insights...</p>
+  `;
 
-      const q = query(
-  collection(db, 'articles'),
-  where('status', '==', 'published')
-);
-      const snapshot = await getDocs(q);
+  try {
 
-      allVideos = [];
+    console.log('VIDEOS: Starting Firebase connection...');
 
-      snapshot.forEach(docSnap => {
+    const snapshot = await getDocs(
+      collection(db, 'articles')
+    );
 
-        const data = docSnap.data();
+    console.log(
+      'VIDEOS: Firebase returned',
+      snapshot.size,
+      'articles'
+    );
 
-        // Only articles that actually have a video URL
-        if (data.videoURL && data.videoURL.trim() !== '') {
+    allVideos = [];
 
-          allVideos.push({
-            id: docSnap.id,
-            ...data
-          });
+    snapshot.forEach(docSnap => {
 
-        }
+      const data = docSnap.data();
 
-      });
-      
-     allVideos.sort((a, b) => {
-  const dateA = a.createdAt?.toMillis
-    ? a.createdAt.toMillis()
-    : 0;
+      console.log(
+        'ARTICLE:',
+        docSnap.id,
+        data
+      );
 
-  const dateB = b.createdAt?.toMillis
-    ? b.createdAt.toMillis()
-    : 0;
+      const isPublished =
+        String(data.status || '').toLowerCase() === 'published';
 
-  return dateB - dateA;
-});
+      const hasVideo =
+        typeof data.videoURL === 'string' &&
+        data.videoURL.trim() !== '';
 
-      if (allVideos.length === 0) {
+      if (isPublished && hasVideo) {
 
-        showEmptyVideos();
+        allVideos.push({
+          id: docSnap.id,
+          ...data
+        });
 
-        return;
       }
 
-
-      // Display all videos initially
-      renderVideos('all');
+    });
 
 
-    } catch (error) {
+    console.log(
+      'VIDEOS: Found',
+      allVideos.length,
+      'published video articles'
+    );
 
-      console.error('Error loading videos:', error);
+
+    allVideos.sort((a, b) => {
+
+      const dateA = a.createdAt?.toMillis
+        ? a.createdAt.toMillis()
+        : 0;
+
+      const dateB = b.createdAt?.toMillis
+        ? b.createdAt.toMillis()
+        : 0;
+
+      return dateB - dateA;
+
+    });
+
+
+    if (allVideos.length === 0) {
 
       videoGrid.className = 'coming-soon';
 
       videoGrid.innerHTML = `
-        <div class="icon">⚠️</div>
-        <h3>Unable to Load Videos</h3>
-        <<p>There was a problem loading the video section.</p>
-<small style="color:#999;">
-  ${escapeHTML(error.message || 'Unknown Firebase error')}
-</small>
+        <div class="icon">🎬</div>
+
+        <h3>No Videos Found</h3>
+
+        <p>
+          Firebase connected successfully, but no published
+          articles with a Video / X Post URL were found.
+        </p>
+
+        <small>
+          Firebase articles found: ${snapshot.size}
+        </small>
+      `;
+
+      return;
 
     }
 
+
+    renderVideos('all');
+
+    console.log(
+      'VIDEOS: Rendering completed successfully'
+    );
+
+  } catch (error) {
+
+    console.error(
+      'VIDEOS FIREBASE ERROR:',
+      error
+    );
+
+    videoGrid.className = 'coming-soon';
+
+    videoGrid.innerHTML = `
+      <div class="icon">⚠️</div>
+
+      <h3>Unable to Load Videos</h3>
+
+      <p>
+        Firebase returned an error while loading the videos.
+      </p>
+
+      <div style="
+        margin-top:15px;
+        padding:12px;
+        background:#f5f5f5;
+        border-radius:8px;
+        font-size:12px;
+        word-break:break-word;
+        text-align:left;
+      ">
+        <strong>Error:</strong><br>
+        ${escapeHTML(error.message || String(error))}
+      </div>
+    `;
+
   }
+
+}
 
 
   // ─────────────────────────────────────────
