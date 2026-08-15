@@ -501,83 +501,50 @@ import {
 
   function createVideoCard(video) {
 
-    const card = document.createElement('article');
+  const title = video.title || 'Naija Insights Video';
+  const category = video.category || 'News';
+  const videoURL = getXUrl(video.videoURL);
 
-    card.className = 'video-card';
+  const card = document.createElement('article');
 
-    const title = video.title || 'Naija Insights Video';
+  card.className = 'video-card';
 
-    const category = video.category || 'News';
+  card.innerHTML = `
+    
+    <div class="video-thumb x-video-thumb">
 
-    const excerpt =
-      video.excerpt ||
-      'Watch this video report from Naija Insights.';
+      <div class="x-embed-container">
 
-    const videoURL = getXUrl(video.videoURL);
-
-
-    card.innerHTML = `
-
-      <div class="video-thumb">
-
-        <div class="video-thumb-inner">
-
-          ${
-            video.imageURL
-              ? `<img
-                   src="${video.imageURL}"
-                   alt="${escapeHTML(title)}"
-                   style="width:100%;height:100%;object-fit:cover;"
-                 >`
-              : `<div class="cat-icon">🎬</div>`
-          }
-
-          <a
-            href="${videoURL}"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="play-overlay"
-            aria-label="Watch video on X"
-          >
-
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path d="M8 5v14l11-7z"></path>
-            </svg>
-
-          </a>
-
-        </div>
+        <blockquote class="twitter-tweet">
+          <a href="${escapeHTML(videoURL)}"></a>
+        </blockquote>
 
       </div>
 
+    </div>
 
-      <div class="video-card-body">
+    <div class="video-card-body">
 
-        <div class="video-cat">
-          ${escapeHTML(category)}
-        </div>
-
-        <div class="video-title">
-          ${escapeHTML(title)}
-        </div>
-
-        <div class="video-meta">
-          ${escapeHTML(excerpt)}
-        </div>
-
+      <div class="video-cat">
+        ${escapeHTML(category)}
       </div>
 
-    `;
+      <div class="video-title">
+        ${escapeHTML(title)}
+      </div>
 
+      <div class="video-meta">
+        ${escapeHTML(
+          video.excerpt ||
+          'Watch this video report from Naija Insights.'
+        )}
+      </div>
 
-    return card;
+    </div>
+  `;
 
-  }
-
-
+  return card;
+}
   // ─────────────────────────────────────────
   // RENDER VIDEOS
   // ─────────────────────────────────────────
