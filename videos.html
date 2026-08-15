@@ -545,6 +545,33 @@ import {
 
   return card;
 }
+
+function loadXWidgets() {
+
+  if (window.twttr && window.twttr.widgets) {
+
+    window.twttr.widgets.load();
+
+    return;
+  }
+
+  const script = document.createElement('script');
+
+  script.src =
+    'https://platform.twitter.com/widgets.js';
+
+  script.async = true;
+
+  script.onload = () => {
+
+    if (window.twttr) {
+      window.twttr.widgets.load();
+    }
+
+  };
+
+  document.head.appendChild(script);
+}
   // ─────────────────────────────────────────
   // RENDER VIDEOS
   // ─────────────────────────────────────────
