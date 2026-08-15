@@ -434,40 +434,71 @@ const videoURL = document.getElementById('artVideoURL').value.trim();
   }
 
   // ── Override publishArticle to handle both create and update ──
-  const _originalPublish = window.publishArticle;
-  window.publishArticle = async () => {
-    if (!editingId) { _originalPublish(); return; }
+const _originalPublish = window.publishArticle;
 
-    // UPDATE existing article
-    const title    = document.getElementById('artTitle').value.trim();
-    const category = document.getElementById('artCategory').value;
-    const author   = document.getElementById('artAuthor').value.trim();
-    const excerpt  = document.getElementById('artExcerpt').value.trim();
-    const body     = document.getElementById('artBody').value.trim();
-    const status   = document.getElementById('artStatus').value;
-    const imageURL = document.getElementById('artImageURL').value.trim();
-    const videoURL = document.getElementById('artVideoURL').value.trim();
-    const breaking = document.getElementById('artBreaking').checked;
-    const featured = document.getElementById('artFeatured').checked;
+window.publishArticle = async () => {
+  if (!editingId) {
+    _originalPublish();
+    return;
+  }
 
-    if (!title || !category || !author || !body) {
-      toast('Please fill in all required fields.', 'error'); return;
-    }
-    setLoading('publishBtn', true);
-    try {
-      await updateDoc(doc(db, 'articles', editingId), {
-        title, category, author, excerpt, body,
-        imageURL, videoURL, status, breaking, featured,
-        readTime: Math.ceil(body.split(' ').length / 200) + ' min read',
-      });
-      toast('Article updated successfully! ✅');
-      cancelEdit();
-      switchTab('articles');
-    } catch(e) {
-      toast('Error updating: ' + e.message, 'error');
-    }
-    setLoading('publishBtn', false);
-  };
+  // UPDATE existing article
+  const title    = document.getElementById('artTitle').value.trim();
+  const category = document.getElementById('artCategory').value;
+  const author   = document.getElementById('artAuthor').value.trim();
+  const excerpt  = document.getElementById('artExcerpt').value.trim();
+  const body     = document.getElementById('artBody').value.trim();
+  const status   = document.getElementById('artStatus').value;
+  const imageURL = document.getElementById('artImageURL').value.trim();
+  const videoURL = document.getElementById('artVideoURL').value.trim();
+  const breaking = document.getElementById('artBreaking').checked;
+  const featured = document.getElementById('artFeatured').checked;
+
+  if (!title || !category || !author || !body) {
+    toast('Please fill in all required fields.', 'error');
+    return;
+  }
+
+  setLoading('publishBtn', true);
+
+  try {
+    await updateDoc(doc(db, 'articles', editingId), {
+      title,
+      category,
+      author,
+      excerpt,
+      body,
+      imageURL,
+      videoURL,
+      status,
+      breaking,
+      featured,
+      readTime: Math.ceil(body.split(/\s+/).length / 200) + ' min read'
+    });
+
+    // Show success message
+    toast('Article updated successfully! ✅', 'success');
+
+    // Clear edit mode WITHOUT showing "Edit cancelled"
+    editingId = null;
+
+    resetForm();
+
+    const btn = document.getElementById('publishBtn');
+    btn.textContent = '🚀 Publish Article';
+    btn.style.background = '';
+
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.remove();
+
+    switchTab('articles');
+
+  } catch (e) {
+    toast('Error updating: ' + e.message, 'error');
+  }
+
+  setLoading('publishBtn', false);
+};
 
   // ── Word count ──
   window.updateWordCount = () => {
