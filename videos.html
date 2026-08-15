@@ -232,6 +232,65 @@
   function closeNav(){const n=document.getElementById('mobileNav');n.classList.remove('open');setTimeout(()=>n.style.display='none',300);document.body.style.overflow='';}
   function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
 
+   async function loadVideos() {
+  const videoGrid = document.getElementById('videoGrid');
+
+  try {
+    const videosQuery = query(
+      collection(db, 'articles'),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(videosQuery);
+
+    const videos = [];
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+
+      if (
+        data.status === 'published' &&
+        data.videoURL &&
+        data.videoURL.trim() !== ''
+      ) {
+        videos.push({
+          id: docSnap.id,
+          ...data
+        });
+      }
+    });
+
+    if (videos.length === 0) {
+      videoGrid.innerHTML = `
+        <div class="coming-soon">
+          <div class="icon">🎬</div>
+          <h3>No Videos Yet</h3>
+          <p>
+            Video reports, interviews and analysis from Naija Insights
+            will appear here.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    videoGrid.innerHTML = videos.map(video => createVideoCard(video)).join('');
+
+    // Load featured video
+    loadFeaturedVideo(videos);
+
+  } catch (error) {
+    console.error('Error loading videos:', error);
+
+    videoGrid.innerHTML = `
+      <div class="coming-soon">
+        <div class="icon">⚠️</div>
+        <h3>Unable to Load Videos</h3>
+        <p>Please refresh the page and try again.</p>
+      </div>
+    `;
+  }
+}
   function filterVideos(cat, btn) {
     document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
