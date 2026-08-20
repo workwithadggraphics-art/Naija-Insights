@@ -145,7 +145,8 @@ const finalStatus = status === 'scheduled' && scheduleTime ? 'scheduled' : statu
     try {
       const docRef = await addDoc(collection(db, 'articles'), {
         title, category, author, excerpt, body,
-        imageURL, videoURL, status, breaking, featured,
+        imageURL, videoURL, status: finalStatus, breaking, featured,
+scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
         readTime: Math.ceil(body.split(' ').length / 200) + ' min read',
         createdAt: serverTimestamp(),
         views: 0
