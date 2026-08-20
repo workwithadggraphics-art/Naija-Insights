@@ -1400,10 +1400,16 @@ window.publishArticle = async () => {
             <!-- Publish actions -->
             <div class="field-card">
               <label>Status</label>
-              <select id="artStatus">
-                <option value="published">Publish Now</option>
-                <option value="draft">Save as Draft</option>
-              </select>
+              <select id="artStatus" onchange="toggleSchedule(this.value)">
+  <option value="published">Publish Now</option>
+  <option value="draft">Save as Draft</option>
+  <option value="scheduled">Schedule for Later</option>
+</select>
+<div id="scheduleField" style="display:none;margin-top:12px;">
+  <label>Schedule Date & Time</label>
+  <input type="datetime-local" id="artScheduleTime" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font-ui);font-size:0.88rem;color:var(--ink);background:var(--off-white);outline:none;">
+  <p style="font-size:0.72rem;color:var(--muted);margin-top:6px;">Article will go live automatically at this time.</p>
+</div>
               <div style="height:14px;"></div>
               <div class="publish-actions">
                 <button class="btn-publish" id="publishBtn" onclick="publishArticle()">🚀 Publish Article</button>
