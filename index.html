@@ -66,6 +66,16 @@
       // Filter published only — done in JS to avoid needing a composite index
       
       const navCatParam = new URLSearchParams(window.location.search).get('cat');
+// Auto-publish scheduled articles whose time has arrived
+const now = new Date();
+articles.forEach(a => {
+  if (a.status === 'scheduled' && a.scheduledAt && new Date(a.scheduledAt) <= now) {
+    // Update status to published in Firestore
+    updateDoc(doc(db, 'articles', a.id), { status: 'published' }).catch(() => {});
+    a.status = 'published';
+  }
+});
+
 const published = articles.filter(a => {
   if (a.status !== 'published') return false;
   if (navCatParam && a.category?.toLowerCase() !== navCatParam.toLowerCase()) return false;
