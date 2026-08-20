@@ -500,6 +500,18 @@ window.publishArticle = async () => {
   setLoading('publishBtn', false);
 };
 
+   window.toggleSchedule = (val) => {
+  const field = document.getElementById('scheduleField');
+  if (val === 'scheduled') {
+    field.style.display = 'block';
+    // Set minimum time to now
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5);
+    document.getElementById('artScheduleTime').min = now.toISOString().slice(0,16);
+  } else {
+    field.style.display = 'none';
+  }
+};
   // ── Word count ──
   window.updateWordCount = () => {
     const words = document.getElementById('artBody').value.trim().split(/\s+/).filter(Boolean).length;
