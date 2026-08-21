@@ -92,6 +92,14 @@ const articleId = window.articleId;
       if (a.imageURL) {
         coverEl.innerHTML = `<img src="${a.imageURL}" alt="${a.title}">`;
         coverEl.className = 'article-cover has-image';
+        // Show photo credit if available
+        if (a.photoCredit) {
+          const creditEl = document.getElementById('photoCredit');
+          if (creditEl) {
+            creditEl.textContent = a.photoCredit;
+            creditEl.style.display = 'block';
+          }
+        }
       } else {
         coverEl.innerHTML = `<span class="cover-emoji">${catEmoji[a.category] || '📰'}</span>`;
         coverEl.style.background = cardBg(a.category);
