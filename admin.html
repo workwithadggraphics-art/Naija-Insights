@@ -132,6 +132,7 @@
     const status   = document.getElementById('artStatus').value;
     const imageURL = document.getElementById('artImageURL').value.trim();
 const videoURL = document.getElementById('artVideoURL').value.trim();
+const photoCredit = document.getElementById('artPhotoCredit')?.value.trim() || '';
      const scheduleTime = document.getElementById('artScheduleTime')?.value || '';
 const finalStatus = status === 'scheduled' && scheduleTime ? 'scheduled' : status;
     const breaking = document.getElementById('artBreaking').checked;
@@ -168,7 +169,7 @@ scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
   };
 
   function resetForm() {
-    ['artTitle','artAuthor','artExcerpt','artBody','artImageURL', 'artVideoURL'].forEach(id => document.getElementById(id).value = '');
+    ['artTitle','artAuthor','artExcerpt','artBody','artImageURL', 'artVideoURL','artphotoCredit'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('artCategory').value = '';
     document.getElementById('artStatus').value = 'published';
     document.getElementById('artBreaking').checked = false;
