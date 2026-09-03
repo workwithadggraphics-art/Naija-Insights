@@ -11,6 +11,53 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Naija Insights">
 <link rel="apple-touch-icon" href="https://iili.io/n98EJ5v.png">
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "4ceb2d9b-1e63-41fd-ae04-f3ee3c2b7dfd",
+      notifyButton: {
+        enable: true,
+        size: 'medium',
+        position: 'bottom-left',
+        text: {
+          'tip.state.unsubscribed': 'Subscribe to Naija Insights news',
+          'tip.state.subscribed': 'Subscribed to notifications',
+          'tip.state.blocked': 'Notifications blocked',
+          'message.prenotify': 'Get notified when we publish new stories',
+          'message.action.subscribed': 'Thanks for subscribing!',
+          'message.action.resubscribed': 'You are now subscribed!',
+          'message.action.unsubscribed': 'You will no longer receive notifications',
+          'dialog.main.title': 'Manage Notifications',
+          'dialog.main.button.subscribe': 'SUBSCRIBE',
+          'dialog.main.button.unsubscribe': 'UNSUBSCRIBE',
+          'dialog.blocked.title': 'Unblock Notifications',
+          'dialog.blocked.message': 'Enable notifications in your browser settings'
+        }
+      },
+      promptOptions: {
+        slidedown: {
+          prompts: [
+            {
+              type: "push",
+              autoPrompt: true,
+              text: {
+                actionMessage: "Stay updated with the latest Nigerian news from Naija Insights",
+                acceptButton: "Allow",
+                cancelButton: "Later"
+              },
+              delay: {
+                pageViews: 1,
+                timeDelay: 5
+              }
+            }
+          ]
+        }
+      }
+    });
+  });
+</script>
 <title>Loading… — Naija Insights</title>
 <meta name="description" content="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
