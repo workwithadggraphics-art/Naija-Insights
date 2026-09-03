@@ -179,6 +179,18 @@ scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
     document.getElementById('urlStatus').textContent = '';
     document.getElementById('charCount').textContent = '0 words';
   }
+  async function sendOneSignalNotification(title, category, articleId) {
+  try {
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, category, articleId })
+    });
+    toast('Push notification sent! 🔔');
+  } catch(e) {
+    console.error('Notification error:', e);
+  }
+}
 
   // ── Send newsletter email via Brevo ──
   async function sendNewsletterEmail(title, category, articleId) {
