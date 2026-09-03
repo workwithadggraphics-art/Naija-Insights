@@ -1,108 +1,32 @@
 export default async function handler(req, res) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({
-      success: false,
-      error: 'Method not allowed'
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const { title, category, articleId } = req.body;
+  const articleLink = `https://naijainsights.vercel.app/article.html?id=${articleId}`;
+
   try {
-    const {
-      title,
-      category,
-      articleId,
-      articleUrl,
-      imageUrl
-    } = req.body || {};
-
-    // Validate required information
-    if (!title || !articleId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Title and articleId are required'
-      });
-    }
-
-    // Make sure the API key exists on Vercel
-    const apiKey = process.env.ONESIGNAL_REST_API_KEY;
-
-    if (!apiKey) {
-      console.error('ONESIGNAL_REST_API_KEY is not configured');
-
-      return res.status(500).json({
-        success: false,
-        error: 'OneSignal API key is not configured'
-      });
-    }
-
-    const siteUrl = 'https://naijainsights.workwithadggraphics.workers.dev';
-
-    const finalArticleUrl =
-      articleUrl ||
-      `${siteUrl}/article.html?id=${encodeURIComponent(articleId)}`;
-
-    const notification = {
-      app_id: process.env.ONESIGNAL_APP_ID,
-
-      target_channel: 'push',
-
-      included_segments: ['Subscribed Users'],
-
-      headings: {
-        en: '📰 New on Naija Insights'
+    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${process.env.ONESIGNAL_API_KEY}`
       },
-
-      contents: {
-        en: title
-      },
-
-      url: finalArticleUrl,
-
-      ...(imageUrl
-        ? {
-            chrome_web_image: imageUrl,
-            chrome_web_icon: imageUrl
-          }
-        : {})
-    };
-
-    const response = await fetch(
-      'https://api.onesignal.com/notifications',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Key ${apiKey}`
-        },
-        body: JSON.stringify(notification)
-      }
-    );
+      body: JSON.stringify({
+        app_id: '4ceb2d9b-1e63-41fd-ae04-f3ee3c2b7dfd',
+        included_segments: ['All'],
+        headings: { en: '📰 ' + title },
+        contents: { en: 'New ' + category + ' story on Naija Insights' },
+        url: articleLink,
+        chrome_web_icon: 'https://iili.io/n98EJ5v.png',
+        firefox_icon: 'https://iili.io/n98EJ5v.png'
+      })
+    });
 
     const data = await response.json();
-
-    if (!response.ok) {
-      console.error('OneSignal error:', data);
-
-      return res.status(response.status).json({
-        success: false,
-        error: 'OneSignal rejected the notification',
-        details: data
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Notification sent successfully',
-      onesignal: data
-    });
-
-  } catch (error) {
-    console.error('Notification endpoint error:', error);
-
-    return res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return res.status(200).json({ success: true, data });
+  } catch(e) {
+    return res.status(500).json({ error: e.message });
   }
 }
