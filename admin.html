@@ -157,9 +157,9 @@ scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
 
       // Send email to subscribers if published
       if (status === 'published') {
-        sendNewsletterEmail(title, category, docRef.id);
-      }
-
+  sendNewsletterEmail(title, category, docRef.id);
+  sendOneSignalNotification(title, category, docRef.id);
+}
       resetForm();
       switchTab('articles');
     } catch(e) {
