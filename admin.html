@@ -181,7 +181,7 @@ scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
   }
   async function sendOneSignalNotification(title, category, articleId) {
   try {
-    await fetch('/api/notify', {
+    await fetch('/api/send-notifications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, category, articleId })
