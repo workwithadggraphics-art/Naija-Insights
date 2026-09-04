@@ -545,6 +545,21 @@ setTimeout(() => {
 </style>
 </head>
 <body>
+<!-- iOS Safari Install Banner -->
+<div id="iosBanner" style="display:none;background:#059669;color:#fff;padding:12px 16px;text-align:center;font-family:'DM Sans',sans-serif;font-size:0.82rem;position:relative;z-index:999;">
+  📱 Install Naija Insights: tap <strong>Share</strong> then <strong>Add to Home Screen</strong>
+  <button onclick="document.getElementById('iosBanner').style.display='none'" style="background:none;border:none;color:#fff;font-size:1.2rem;position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;">✕</button>
+</div>
+
+<script>
+  // Show banner only on iOS Safari
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone;
+  const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
+  if (isIOS && isSafari && !isStandalone) {
+    document.getElementById('iosBanner').style.display = 'block';
+  }
+</script>
 
 <!-- TICKER -->
 <div class="ticker-bar" id="tickerBar">
