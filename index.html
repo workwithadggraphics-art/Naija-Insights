@@ -265,7 +265,8 @@ setTimeout(() => {
           ${a.imageURL ? `<img src="${a.imageURL}" alt="" style="width:80px;height:68px;object-fit:cover;border-radius:8px;">` : `<span style="font-size:1.8rem;">${catEmoji[a.category]||'📰'}</span>`}
         </div>
         <div class="list-card-body">
-          <span class="category-badge ${catClass[a.category]||'cat-general'}" style="margin-bottom:4px;">${a.category}</span>
+          <span class="category-badge ${catClass[a.category]||'cat-general'}">${a.category}</span>
+${a.exclusive ? '<span style="background:#7c3aed;color:#fff;font-family:var(--font-ui);font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.06em;text-transform:uppercase;margin-left:4px;">⭐ EXCLUSIVE</span>' : ''}
           <div class="list-card-title">${a.title}</div>
           <div class="list-card-meta">${a.author} · ${timeAgo(a.createdAt)} · ${a.readTime||''} · 👁 ${(a.views||0).toLocaleString()}</div>
         </div>
