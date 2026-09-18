@@ -137,6 +137,7 @@ const photoCredit = document.getElementById('artPhotoCredit')?.value.trim() || '
 const finalStatus = status === 'scheduled' && scheduleTime ? 'scheduled' : status;
     const breaking = document.getElementById('artBreaking').checked;
     const featured = document.getElementById('artFeatured').checked;
+const exclusive = document.getElementById('artExclusive').checked;
 
     if (!title || !category || !author || !body) {
       toast('Please fill in all required fields.', 'error'); return;
