@@ -167,6 +167,10 @@ const articleId = window.articleId;
       if (a.breaking) {
         document.getElementById('breakingBadge').style.display = 'inline-flex';
       }
+     if (a.exclusive) {
+  const excBadge = document.getElementById('exclusiveBadge');
+  if (excBadge) excBadge.style.display = 'inline-flex';
+}
 
       // Title, excerpt, meta — safe null checks
       const setText = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
