@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exclusives — Naija Insights</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#059669">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Source+Serif+4:wght@300;400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({ appId: "4ceb2d9b-1e63-41fd-ae04-f3ee3c2b7dfd" });
+  });
+</script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, query, orderBy, where }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDCoc6cZeyK-QnRigxT9KSU9fk5kFAyCJc",
+    authDomain: "naija-insights.firebaseapp.com",
+    projectId: "naija-insights",
+    storageBucket: "naija-insights.firebasestorage.app",
+    messagingSenderId: "620443477759",
+    appId: "1:620443477759:web:5ff1a76f4e0392532bceca"
+  };
+
+  const app = initializeApp(firebaseConfig, 'exclusives-app');
+  const db  = getFirestore(app);
+
+  const catClass = { Politics:'cat-politics', Entertainment:'cat-entertainment', Health:'cat-health', Education:'cat-education', Security:'cat-security', Sports:'cat-sports' };
+  const catEmoji = { Politics:'🏛️', Entertainment:'🎭', Health:'🏥', Education:'📚', Security:'🛡️', Sports:'⚽' };
+
+  function timeAgo(ts) {
+    if (!ts) return '';
+    const secs = Math.floor((Date.now() - ts.seconds * 1000) / 1000);
+    if (secs < 3600) return Math.floor(secs/60) + ' min ago';
+    if (secs < 86400) return Math.floor(secs/3600) + ' hrs ago';
+    return Math.floor(secs/86400) + ' days ago';
+  }
+
+  async function loadExclusives() {
+    try {
+      const q = query(
+        collection(db, 'articles'),
+        orderBy('createdAt', 'desc')
+      );
+      const snap = await getDocs(q);
+      const exclusives = [];
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.status === 'published' && data.exclusive === true) {
+          exclusives.push({ id: d.id, ...data });
+        }
+      });
+
+      document.getElementById('skeleton').style.display = 'none';
+
+      if (exclusives.length === 0) {
+        document.getElementById('emptyState').style.display = 'flex';
+        return;
+      }
+
+      document.getElementById('exclusiveCount').textContent = exclusives.length + ' Exclusive' + (exclusives.length !== 1 ? 's' : '');
+
+      // Featured — first article
+      const featured = exclusives[0];
+      const featEl = document.getElementById('featuredExclusive');
+      featEl.onclick = () => location.href = 'article.html?id=' + featured.id;
+      if (featured.imageURL) {
+        document.getElementById('featuredImg').innerHTML = `<img src="${featured.imageURL}" alt="${featured.title}" style="width:100%;height:100%;object-fit:cover;opacity:0.5;">`;
+      }
+      document.getElementById('featuredCategory').textContent = featured.category;
+      document.getElementById('featuredCategory').className = 'category-badge ' + (catClass[featured.category] || 'cat-general');
+      document.getElementById('featuredTitle').textContent = featured.title;
+      document.getElementById('featuredMeta').textContent = 'By ' + featured.author + '  ·  ' + timeAgo(featured.createdAt) + '  ·  ' + (featured.readTime || '');
+
+      // Grid — rest of articles
+      const grid = document.getElementById('exclusivesGrid');
+      grid.innerHTML = exclusives.slice(1).map(a => `
+        <article class="exc-card" onclick="location.href='article.html?id=${a.id}'" tabindex="0">
+          <div class="exc-card-img" style="background:${cardBg(a.category)};">
+            ${a.imageURL ? `<img src="${a.imageURL}" alt="" style="width:100%;height:100%;object-fit:cover;">` : `<span style="font-size:2rem;">${catEmoji[a.category]||'📰'}</span>`}
+          </div>
+          <div class="exc-card-body">
+            <div class="exc-card-top">
+              <span class="category-badge ${catClass[a.category]||'cat-general'}">${a.category}</span>
+              <span class="exc-badge">⭐ EXCLUSIVE</span>
+            </div>
+            <h3 class="exc-card-title">${a.title}</h3>
+            <p class="exc-card-excerpt">${a.excerpt || ''}</p>
+            <div class="exc-card-meta">${a.author} · ${timeAgo(a.createdAt)} · ${a.readTime||''}</div>
+          </div>
+        </article>
+      `).join('');
+
+    } catch(e) {
+      console.error(e);
+      document.getElementById('skeleton').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'flex';
+    }
+  }
+
+  function cardBg(cat) {
+    const map = { Politics:'linear-gradient(135deg,#fee2e2,#fca5a5)', Entertainment:'linear-gradient(135deg,#fef3c7,#fde68a)', Health:'linear-gradient(135deg,#d1fae5,#6ee7b7)', Education:'linear-gradient(135deg,#dbeafe,#93c5fd)', Security:'linear-gradient(135deg,#f3e8ff,#c4b5fd)', Sports:'linear-gradient(135deg,#f0fdf4,#86efac)' };
+    return map[cat] || 'linear-gradient(135deg,#f1f5f9,#e2e8f0)';
+  }
+
+  loadExclusives();
+</script>
+
+<style>
+  :root{--emerald:#059669;--emerald-dark:#047857;--emerald-light:#d1fae5;--dark-grey:#1f2937;--mid-grey:#374151;--light-grey:#6b7280;--border-grey:#e5e7eb;--off-white:#f9f7f4;--white:#ffffff;--ink:#111827;--exclusive:#7c3aed;--font-display:'Playfair Display',Georgia,serif;--font-body:'Source Serif 4',Georgia,serif;--font-ui:'DM Sans',sans-serif;}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font-body);background:var(--off-white);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;}
+  a{text-decoration:none;color:inherit;}
+  img{display:block;max-width:100%;}
+
+  /* HEADER */
+  header{background:var(--white);border-bottom:1px solid var(--border-grey);position:sticky;top:0;z-index:100;box-shadow:0 1px 12px rgba(0,0,0,0.06);}
+  .header-inner{max-width:1240px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:68px;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-text{display:flex;flex-direction:column;line-height:1;}
+  .logo-name{font-family:var(--font-display);font-weight:900;font-size:1.2rem;color:var(--ink);}
+  .logo-tagline{font-family:var(--font-ui);font-size:0.62rem;color:var(--light-grey);letter-spacing:0.12em;text-transform:uppercase;}
+  nav{display:flex;align-items:center;gap:2px;}
+  nav a{font-family:var(--font-ui);font-size:0.82rem;font-weight:500;color:var(--mid-grey);padding:6px 12px;border-radius:6px;transition:color 0.2s,background 0.2s;}
+  nav a:hover{color:var(--emerald);background:var(--emerald-light);}
+  nav a.active{color:var(--exclusive);font-weight:700;}
+  .hamburger{display:none;width:36px;height:36px;border:1.5px solid var(--border-grey);background:transparent;border-radius:8px;cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;}
+  .hamburger span{width:18px;height:2px;background:var(--mid-grey);border-radius:2px;}
+  .mobile-nav{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200;opacity:0;transition:opacity 0.3s;}
+  .mobile-nav.open{display:flex;opacity:1;}
+  .mobile-nav-panel{background:var(--white);width:280px;height:100%;padding:24px 20px;display:flex;flex-direction:column;gap:8px;transform:translateX(-100%);transition:transform 0.3s ease;}
+  .mobile-nav.open .mobile-nav-panel{transform:translateX(0);}
+  .mobile-nav-close{align-self:flex-end;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--mid-grey);margin-bottom:12px;}
+  .mobile-nav a{font-family:var(--font-ui);font-size:1rem;font-weight:500;color:var(--mid-grey);padding:12px 16px;border-radius:8px;display:block;transition:all 0.2s;}
+  .mobile-nav a:hover{background:var(--emerald-light);color:var(--emerald);}
+
+  /* PAGE HERO */
+  .page-hero{background:linear-gradient(135deg,#1e1b4b,#2e1065,#1f2937);padding:60px 20px;text-align:center;position:relative;overflow:hidden;}
+  .page-hero::before{content:'⭐';position:absolute;font-size:20rem;opacity:0.03;top:-40px;right:-60px;line-height:1;}
+  .page-hero .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,0.3);border:1px solid rgba(124,58,237,0.5);color:#c4b5fd;font-family:var(--font-ui);font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:16px;}
+  .page-hero h1{font-family:var(--font-display);font-size:2.8rem;font-weight:900;color:#fff;margin-bottom:12px;}
+  .page-hero p{font-family:var(--font-ui);font-size:0.92rem;color:rgba(255,255,255,0.6);max-width:520px;margin:0 auto;}
+  .purple-line{width:60px;height:4px;background:var(--exclusive);border-radius:2px;margin:20px auto 0;}
+  .count-badge{display:inline-block;background:var(--exclusive);color:#fff;font-family:var(--font-ui);font-size:0.75rem;font-weight:700;padding:4px 12px;border-radius:20px;margin-top:16px;}
+
+  /* MAIN */
+  main{max-width:1240px;margin:0 auto;padding:40px 20px 60px;}
+
+  /* FEATURED */
+  .featured-exclusive{position:relative;border-radius:16px;overflow:hidden;min-height:460px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;margin-bottom:48px;background:var(--dark-grey);}
+  .featured-exclusive-img{position:absolute;inset:0;background:linear-gradient(135deg,#2e1065,#1f2937);display:flex;align-items:center;justify-content:center;font-size:6rem;opacity:0.3;}
+  .featured-exclusive-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.4) 50%,transparent 100%);}
+  .featured-exclusive-content{position:relative;padding:32px;}
+  .featured-exclusive-content .exc-top{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .exc-badge-lg{display:inline-flex;align-items:center;gap:5px;background:var(--exclusive);color:#fff;font-family:var(--font-ui);font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 12px;border-radius:4px;}
+  .featured-exclusive-content h2{font-family:var(--font-display);font-size:2rem;font-weight:900;color:#fff;line-height:1.2;margin-bottom:12px;text-shadow:0 2px 12px rgba(0,0,0,0.4);}
+  .featured-exclusive-content .meta{font-family:var(--font-ui);font-size:0.78rem;color:rgba(255,255,255,0.65);}
+  .featured-exclusive:hover .featured-exclusive-img{opacity:0.5;transition:opacity 0.3s;}
+
+  /* SECTION HEADER */
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:12px;border-bottom:2px solid var(--exclusive);}
+  .section-title{font-family:var(--font-display);font-size:1.35rem;font-weight:900;color:var(--ink);}
+  .section-title span{color:var(--exclusive);}
+
+  /* EXCLUSIVES GRID */
+  .exc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+  .exc-card{background:var(--white);border-radius:12px;overflow:hidden;border:1px solid var(--border-grey);border-top:3px solid var(--exclusive);cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;display:flex;flex-direction:column;}
+  .exc-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(124,58,237,0.15);}
+  .exc-card-img{height:180px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;}
+  .exc-card-body{padding:18px;display:flex;flex-direction:column;flex:1;}
+  .exc-card-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .exc-badge{background:var(--exclusive);color:#fff;font-family:var(--font-ui);font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.06em;text-transform:uppercase;}
+  .exc-card-title{font-family:var(--font-display);font-size:1rem;font-weight:700;line-height:1.35;color:var(--ink);margin-bottom:8px;flex:1;}
+  .exc-card:hover .exc-card-title{color:var(--exclusive);}
+  .exc-card-excerpt{font-size:0.82rem;color:var(--light-grey);line-height:1.5;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .exc-card-meta{font-family:var(--font-ui);font-size:0.7rem;color:var(--light-grey);margin-top:auto;}
+
+  /* CATEGORY BADGE */
+  .category-badge{display:inline-block;font-family:var(--font-ui);font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
+  .cat-politics{background:#fee2e2;color:#b91c1c;}
+  .cat-entertainment{background:#fef3c7;color:#92400e;}
+  .cat-health{background:#d1fae5;color:#065f46;}
+  .cat-education{background:#dbeafe;color:#1e40af;}
+  .cat-security{background:#f3e8ff;color:#6b21a8;}
+  .cat-sports{background:#dcfce7;color:#166534;}
+  .cat-general{background:var(--emerald-light);color:var(--emerald-dark);}
+
+  /* SKELETON */
+  .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  /* EMPTY STATE */
+  #emptyState{display:none;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center;}
+  #emptyState .icon{font-size:3.5rem;margin-bottom:16px;}
+  #emptyState h2{font-family:var(--font-display);font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:10px;}
+  #emptyState p{font-family:var(--font-ui);font-size:0.88rem;color:var(--light-grey);max-width:400px;}
+
+  /* FOOTER */
+  footer{background:var(--dark-grey);color:rgba(255,255,255,0.75);margin-top:20px;}
+  .footer-bottom{max-width:1240px;margin:0 auto;padding:24px 20px;display:flex;align-items:center;justify-content:space-between;}
+  .footer-bottom p{font-family:var(--font-ui);font-size:0.75rem;color:rgba(255,255,255,0.35);}
+  .footer-links{display:flex;gap:20px;}
+  .footer-links a{font-family:var(--font-ui);font-size:0.72rem;color:rgba(255,255,255,0.35);transition:color 0.2s;}
+  .footer-links a:hover{color:rgba(255,255,255,0.7);}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .featured-exclusive,.exc-grid{animation:fadeUp 0.5s ease both;}
+  .exc-grid{animation-delay:0.1s;}
+
+  @media(max-width:900px){.exc-grid{grid-template-columns:repeat(2,1fr);} nav{display:none;} .hamburger{display:flex;}}
+  @media(max-width:560px){.exc-grid{grid-template-columns:1fr;} .page-hero h1{font-size:2rem;} .featured-exclusive{min-height:320px;} .featured-exclusive-content h2{font-size:1.5rem;} .footer-bottom{flex-direction:column;gap:10px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <img src="logo.png" alt="Naija Insights" height="40" onerror="this.style.display='none'">
+      <div class="logo-text">
+        <span class="logo-name">Naija Insights</span>
+        <span class="logo-tagline">Nigeria's Pulse</span>
+      </div>
+    </a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="index.html?cat=Politics">Politics</a>
+      <a href="index.html?cat=Entertainment">Entertainment</a>
+      <a href="index.html?cat=Sports">Sports</a>
+      <a href="videos.html">Videos</a>
+      <a href="exclusives.html" class="active">Exclusives</a>
+    </nav>
+    <button class="hamburger" aria-label="Menu" onclick="openNav()"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<div class="mobile-nav" id="mobileNav" onclick="closeNavOutside(event)">
+  <div class="mobile-nav-panel">
+    <button class="mobile-nav-close" onclick="closeNav()">✕</button>
+    <a href="index.html">🏠 Home</a>
+    <a href="index.html?cat=Politics">🏛️ Politics</a>
+    <a href="index.html?cat=Entertainment">🎭 Entertainment</a>
+    <a href="index.html?cat=Health">🏥 Health</a>
+    <a href="index.html?cat=Education">📚 Education</a>
+    <a href="index.html?cat=Security">🛡️ Security</a>
+    <a href="index.html?cat=Sports">⚽ Sports</a>
+    <a href="videos.html">🎬 Videos</a>
+    <a href="exclusives.html">⭐ Exclusives</a>
+  </div>
+</div>
+
+<div class="page-hero">
+  <div class="badge">⭐ Premium Journalism</div>
+  <h1>Exclusives</h1>
+  <p>Independent investigations, in-depth reports and exclusive stories from the Naija Insights editorial team.</p>
+  <div class="purple-line"></div>
+  <div class="count-badge" id="exclusiveCount">Loading...</div>
+</div>
+
+<main>
+
+  <!-- FEATURED EXCLUSIVE -->
+  <article class="featured-exclusive" id="featuredExclusive" tabindex="0">
+    <div class="featured-exclusive-img" id="featuredImg">📰</div>
+    <div class="featured-exclusive-overlay"></div>
+    <div class="featured-exclusive-content">
+      <div class="exc-top">
+        <span class="exc-badge-lg">⭐ EXCLUSIVE</span>
+        <span class="category-badge" id="featuredCategory"></span>
+      </div>
+      <h2 id="featuredTitle">Loading exclusive story...</h2>
+      <p class="meta" id="featuredMeta"></p>
+    </div>
+  </article>
+
+  <!-- MORE EXCLUSIVES -->
+  <div class="section-header">
+    <h2 class="section-title">More <span>Exclusives</span></h2>
+  </div>
+
+  <!-- SKELETON -->
+  <div id="skeleton" class="exc-grid">
+    <div class="skeleton" style="height:320px;border-radius:12px;"></div>
+    <div class="skeleton" style="height:320px;border-radius:12px;"></div>
+    <div class="skeleton" style="height:320px;border-radius:12px;"></div>
+  </div>
+
+  <!-- GRID -->
+  <div class="exc-grid" id="exclusivesGrid"></div>
+
+  <!-- EMPTY STATE -->
+  <div id="emptyState">
+    <div class="icon">⭐</div>
+    <h2>No Exclusives Yet</h2>
+    <p>Check back soon — our editorial team is working on exclusive investigations and in-depth reports.</p>
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-bottom">
+    <p>© 2026 Naija Insights. All rights reserved. Made in Nigeria 🇳🇬</p>
+    <div class="footer-links">
+      <a href="privacy.html">Privacy</a>
+      <a href="terms.html">Terms</a>
+      <a href="index.html">Home</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function openNav(){const n=document.getElementById('mobileNav');n.style.display='flex';requestAnimationFrame(()=>n.classList.add('open'));document.body.style.overflow='hidden';}
+  function closeNav(){const n=document.getElementById('mobileNav');n.classList.remove('open');setTimeout(()=>n.style.display='none',300);document.body.style.overflow='';}
+  function closeNavOutside(e){if(e.target===document.getElementById('mobileNav'))closeNav();}
+</script>
+</body>
+</html>
