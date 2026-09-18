@@ -147,7 +147,7 @@ const exclusive = document.getElementById('artExclusive').checked;
     try {
       const docRef = await addDoc(collection(db, 'articles'), {
         title, category, author, excerpt, body,
-        imageURL, videoURL, photoCredit, status: finalStatus, breaking, featured,
+        imageURL, videoURL, photoCredit, status: finalStatus, breaking, featured, exclusive,
 scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
         readTime: Math.ceil(body.split(' ').length / 200) + ' min read',
         createdAt: serverTimestamp(),
@@ -175,6 +175,7 @@ scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
     document.getElementById('artStatus').value = 'published';
     document.getElementById('artBreaking').checked = false;
     document.getElementById('artFeatured').checked = false;
+    document.getElementById('artExclusive').checked = false;
     document.getElementById('imagePreview').style.display = 'none';
     document.getElementById('imagePlaceholder').style.display = 'flex';
     document.getElementById('urlStatus').textContent = '';
