@@ -170,7 +170,8 @@ scheduledAt: scheduleTime ? new Date(scheduleTime).toISOString() : null,
   };
 
   function resetForm() {
-    ['artTitle','artAuthor','artExcerpt','artBody','artImageURL', 'artVideoURL','artPhotoCredit'].forEach(id => document.getElementById(id).value = '');
+    ['artTitle','artAuthor','artExcerpt','artImageURL','artVideoURL','artPhotoCredit'].forEach(id => document.getElementById(id).value = '');
+document.getElementById('artBody').innerHTML = '';
     document.getElementById('artCategory').value = '';
     document.getElementById('artStatus').value = 'published';
     document.getElementById('artBreaking').checked = false;
