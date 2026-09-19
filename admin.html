@@ -530,6 +530,27 @@ window.publishArticle = async () => {
     field.style.display = 'none';
   }
 };
+// Rich text formatting
+window.formatText = (command) => {
+  const editor = document.getElementById('artBody');
+  editor.focus();
+  if (command === 'bold') {
+    document.execCommand('bold', false, null);
+  } else if (command === 'italic') {
+    document.execCommand('italic', false, null);
+  } else if (command === 'underline') {
+    document.execCommand('underline', false, null);
+  } else if (command === 'strikethrough') {
+    document.execCommand('strikeThrough', false, null);
+  } else if (command === 'h2') {
+    document.execCommand('formatBlock', false, 'h2');
+  } else if (command === 'blockquote') {
+    document.execCommand('formatBlock', false, 'blockquote');
+  } else if (command === 'ul') {
+    document.execCommand('insertUnorderedList', false, null);
+  }
+  updateWordCount();
+};
   // ── Word count ──
   window.updateWordCount = () => {
     const words = document.getElementById('artBody').value.trim().split(/\s+/).filter(Boolean).length;
