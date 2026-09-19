@@ -553,10 +553,11 @@ window.formatText = (command) => {
 };
   // ── Word count ──
   window.updateWordCount = () => {
-    const words = document.getElementById('artBody').value.trim().split(/\s+/).filter(Boolean).length;
-    document.getElementById('charCount').textContent = words + ' words · ~' + Math.ceil(words/200) + ' min read';
-  };
-
+  const editor = document.getElementById('artBody');
+  const text = editor.innerText || editor.textContent || '';
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('charCount').textContent = words + ' words · ~' + Math.ceil(words/200) + ' min read';
+};
   // ── Enter key on login ──
   window.loginKeydown = (e) => { if (e.key === 'Enter') handleLogin(); };
 </script>
