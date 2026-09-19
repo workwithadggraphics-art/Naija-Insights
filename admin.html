@@ -1419,8 +1419,26 @@ window.publishArticle = async () => {
 
             <div class="field-card">
               <label>Article Body <span class="required">*</span></label>
-              <textarea id="artBody" placeholder="Write the full article here…" oninput="updateWordCount()"></textarea>
-              <div class="char-count" id="charCount">0 words</div>
+              <!-- Formatting Toolbar -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px;background:#f8fafc;border:1.5px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;">
+  <button type="button" onclick="formatText('bold')" title="Bold" style="width:34px;height:34px;border:1.5px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-weight:900;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='var(--emerald)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='inherit'"><b>B</b></button>
+  <button type="button" onclick="formatText('italic')" title="Italic" style="width:34px;height:34px;border:1.5px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='var(--emerald)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='inherit'"><i>I</i></button>
+  <button type="button" onclick="formatText('underline')" title="Underline" style="width:34px;height:34px;border:1.5px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='var(--emerald)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='inherit'"><u>U</u></button>
+  <button type="button" onclick="formatText('strikethrough')" title="Strikethrough" style="width:34px;height:34px;border:1.5px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='var(--emerald)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='inherit'"><s>S</s></button>
+  <div style="width:1px;background:var(--border);margin:0 4px;"></div>
+  <button type="button" onclick="formatText('h2')" title="Heading" style="height:34px;padding:0 10px;border:1.5px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-size:0.78rem;font-weight:700;transition:all 0.2s;" onmouseover="this.style.background='var(--emerald)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='inherit'">H2</button>
+  <button type="button" onclick="formatText('blockquote')" title="Quote" style="height:34px;padding:0 10px;border:1.5px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='var(--emerald)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='inherit'">"</button>
+  <button type="button" onclick="formatText('ul')" title="Bullet list" style="height:34px;padding:0 10px;border:1.5px solid var(--border);background:#fff;border-radius:6px;cursor:pointer;font-size:0.9rem;transition:all 0.2s;" onmouseover="this.style.background='var(--emerald)';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='inherit'">≡</button>
+  <div style="margin-left:auto;font-family:var(--font-ui);font-size:0.72rem;color:var(--muted);line-height:34px;" id="charCount">0 words</div>
+</div>
+
+<!-- Rich text editor area -->
+<div id="artBody"
+  contenteditable="true"
+  oninput="updateWordCount()"
+  placeholder="Write the full article here…"
+  style="width:100%;min-height:280px;padding:16px;border:1.5px solid var(--border);border-top:none;border-radius:0 0 8px 8px;font-family:var(--font-body,'Georgia',serif);font-size:0.95rem;color:var(--ink);background:#fff;outline:none;line-height:1.8;overflow-y:auto;">
+</div>
             </div>
 
           </div>
