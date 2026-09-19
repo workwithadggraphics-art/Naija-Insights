@@ -399,7 +399,7 @@ document.getElementById('artBody').innerHTML = '';
       // Populate form fields
       document.getElementById('artTitle').value    = a.title    || '';
       document.getElementById('artExcerpt').value  = a.excerpt  || '';
-      document.getElementById('artBody').value     = a.body     || '';
+      document.getElementById('artBody').innerHTML = a.body || '';
       document.getElementById('artAuthor').value   = a.author   || '';
       document.getElementById('artCategory').value = a.category || '';
       document.getElementById('artStatus').value   = a.status   || 'published';
