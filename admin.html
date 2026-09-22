@@ -531,6 +531,19 @@ window.publishArticle = async () => {
     field.style.display = 'none';
   }
 };
+window.toggleExclusive = (checked) => {
+  const catField = document.getElementById('categoryField');
+  const excNote = document.getElementById('exclusiveNote');
+  if (checked) {
+    catField.style.display = 'none';
+    excNote.style.display = 'block';
+    document.getElementById('artCategory').value = 'Exclusive';
+  } else {
+    catField.style.display = 'block';
+    excNote.style.display = 'none';
+    document.getElementById('artCategory').value = '';
+  }
+};
 // Rich text formatting
 window.formatText = (command) => {
   const editor = document.getElementById('artBody');
