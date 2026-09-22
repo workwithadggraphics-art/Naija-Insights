@@ -160,9 +160,13 @@ const articleId = window.articleId;
       }
 
       // Badges
-      const badgeEl = document.getElementById('articleBadge');
-      badgeEl.textContent = a.category;
-      badgeEl.className = `category-badge ${catClass[a.category] || 'cat-general'}`;
+if (a.exclusive) {
+  document.getElementById('articleBadge').style.display = 'none';
+} else {
+  const badgeEl = document.getElementById('articleBadge');
+  badgeEl.textContent = a.category;
+  badgeEl.className = `category-badge ${catClass[a.category] || 'cat-general'}`;
+}
 
       if (a.breaking) {
         document.getElementById('breakingBadge').style.display = 'inline-flex';
