@@ -460,6 +460,7 @@ if (a.videoURL) {
   .mobile-nav a { font-family: var(--font-ui); font-size: 1rem; font-weight: 500; color: var(--mid-grey); padding: 12px 16px; border-radius: 8px; display: block; transition: all 0.2s; }
   .mobile-nav a:hover { background: var(--emerald-light); color: var(--emerald); }
 
+
   /* BREADCRUMB */
   .breadcrumb { max-width: 800px; margin: 24px auto 0; padding: 0 20px; font-family: var(--font-ui); font-size: 0.75rem; color: var(--light-grey); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .breadcrumb a { color: var(--emerald); transition: opacity 0.2s; }
@@ -468,6 +469,21 @@ if (a.videoURL) {
 
   /* ARTICLE LAYOUT */
   .article-wrap { max-width: 800px; margin: 0 auto; padding: 0 20px 60px; }
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  border: 1px solid #ddd;
+  background: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.like-btn:active { transform: scale(0.95); }
+.like-btn.liked { background: #ffe8e8; border-color: #ff6b6b; }
+.like-btn:disabled { cursor: default; }
 
   /* SKELETON */
   .skeleton { background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
