@@ -452,71 +452,276 @@ document.getElementById('artBody').innerHTML = '';
     toast('Edit cancelled.', 'info');
   }
 
-  // ── Override publishArticle to handle both create and update ──
+  // ------------------------------------
+// HANDLE CREATE + UPDATE ARTICLE
+// ------------------------------------
+
 const _originalPublish = window.publishArticle;
 
 window.publishArticle = async () => {
+
+  // ====================================
+  // CREATE NEW ARTICLE
+  // ====================================
+
   if (!editingId) {
-    _originalPublish();
+
+    await _originalPublish();
+
     return;
   }
 
-  // UPDATE existing article
-  const title    = document.getElementById('artTitle').value.trim();
-  const category = document.getElementById('artCategory').value;
-  const author   = document.getElementById('artAuthor').value.trim();
-  const excerpt  = document.getElementById('artExcerpt').value.trim();
-  const body     = document.getElementById('artBody').value.trim();
-  const status   = document.getElementById('artStatus').value;
-  const imageURL = document.getElementById('artImageURL').value.trim();
-  const videoURL = document.getElementById('artVideoURL').value.trim();
-  const breaking = document.getElementById('artBreaking').checked;
-  const featured = document.getElementById('artFeatured').checked;
 
-  if (!title || !category || !author || !body) {
-    toast('Please fill in all required fields.', 'error');
+  // ====================================
+  // UPDATE EXISTING ARTICLE
+  // ====================================
+
+  if (!editingId) {
+
+    toast(
+      'No article selected for editing.',
+      'error'
+    );
+
     return;
   }
 
-  setLoading('publishBtn', true);
+
+  // ------------------------------------
+  // GET BASIC FIELDS
+  // ------------------------------------
+
+  const title =
+    document.getElementById('artTitle')?.value.trim() || '';
+
+  const category =
+    document.getElementById('artCategory')?.value || '';
+
+  const author =
+    document.getElementById('artAuthor')?.value.trim() || '';
+
+  const excerpt =
+    document.getElementById('artExcerpt')?.value.trim() || '';
+
+
+  // ------------------------------------
+  // GET CONTENTEDITABLE ARTICLE BODY
+  // ------------------------------------
+
+  const artBodyEl =
+    document.getElementById('artBody');
+
+  const bodyHTML =
+    artBodyEl?.innerHTML.trim() || '';
+
+  const bodyText =
+    artBodyEl?.innerText.trim() || '';
+
+
+  // ------------------------------------
+  // GET OTHER FIELDS
+  // ------------------------------------
+
+  const status =
+    document.getElementById('artStatus')?.value || 'published';
+
+
+  const imageElement =
+    document.getElementById('artImageURL') ||
+    document.getElementById('artCoverImage');
+
+  const imageURL =
+    imageElement?.value.trim() || '';
+
+
+  const videoURL =
+    document.getElementById('artVideoURL')?.value.trim() || '';
+
+
+  const breaking =
+    document.getElementById('artBreaking')?.checked || false;
+
+
+  const featured =
+    document.getElementById('artFeatured')?.checked || false;
+
+
+  // ------------------------------------
+  // VALIDATION
+  // ------------------------------------
+
+  if (
+    !title ||
+    !category ||
+    !author ||
+    !bodyText
+  ) {
+
+    toast(
+      'Please fill in all required fields.',
+      'error'
+    );
+
+    return;
+  }
+
+
+  // ------------------------------------
+  // LOADING STATE
+  // ------------------------------------
+
+  setLoading(
+    'publishBtn',
+    true
+  );
+
 
   try {
-    await updateDoc(doc(db, 'articles', editingId), {
-      title,
-      category,
-      author,
-      excerpt,
-      body,
-      imageURL,
-      videoURL,
-      status,
-      breaking,
-      featured,
-      readTime: Math.ceil(body.split(/\s+/).length / 200) + ' min read'
-    });
 
-    // Show success message
-    toast('Article updated successfully! ✅', 'success');
+    // ----------------------------------
+    // CALCULATE READ TIME
+    // ----------------------------------
 
-    // Clear edit mode WITHOUT showing "Edit cancelled"
+    const words =
+      bodyText
+        .split(/\s+/)
+        .filter(Boolean)
+        .length;
+
+
+    const calculatedReadTime =
+      Math.max(
+        1,
+        Math.ceil(words / 200)
+      ) + ' min read';
+
+
+    // ----------------------------------
+    // UPDATE FIRESTORE
+    // ----------------------------------
+
+    await updateDoc(
+      doc(
+        db,
+        'articles',
+        editingId
+      ),
+      {
+        title,
+        category,
+        author,
+        excerpt,
+
+        // Save formatted HTML
+        body: bodyHTML,
+
+        imageURL,
+        videoURL,
+        status,
+        breaking,
+        featured,
+
+        readTime: calculatedReadTime
+      }
+    );
+
+
+    // ----------------------------------
+    // SUCCESS
+    // ----------------------------------
+
+    toast(
+      'Article updated successfully! ✅',
+      'success'
+    );
+
+
+    // ----------------------------------
+    // EXIT EDIT MODE
+    // ----------------------------------
+
     editingId = null;
+
+
+    // ----------------------------------
+    // RESET FORM
+    // ----------------------------------
 
     resetForm();
 
-    const btn = document.getElementById('publishBtn');
-    btn.textContent = '🚀 Publish Article';
-    btn.style.background = '';
 
-    const cancelBtn = document.getElementById('cancelEditBtn');
-    if (cancelBtn) cancelBtn.remove();
+    // ----------------------------------
+    // RESTORE PUBLISH BUTTON
+    // ----------------------------------
+
+    const btn =
+      document.getElementById('publishBtn');
+
+    if (btn) {
+
+      btn.textContent =
+        '🚀 Publish Article';
+
+      btn.style.background = '';
+
+    }
+
+
+    // ----------------------------------
+    // REMOVE CANCEL BUTTON
+    // ----------------------------------
+
+    const cancelBtn =
+      document.getElementById('cancelEditBtn');
+
+    if (cancelBtn) {
+      cancelBtn.remove();
+    }
+
+
+    // ----------------------------------
+    // RETURN TO ARTICLES
+    // ----------------------------------
 
     switchTab('articles');
 
+
+    // ----------------------------------
+    // REFRESH ARTICLE LIST
+    // ----------------------------------
+
+    if (
+      typeof loadArticles === 'function'
+    ) {
+
+      await loadArticles();
+
+    }
+
+
   } catch (e) {
-    toast('Error updating: ' + e.message, 'error');
+
+    console.error(
+      'Error updating article:',
+      e
+    );
+
+
+    toast(
+      'Error updating: ' + e.message,
+      'error'
+    );
+
+
+  } finally {
+
+    setLoading(
+      'publishBtn',
+      false
+    );
+
   }
 
-  setLoading('publishBtn', false);
 };
 
    window.toggleSchedule = (val) => {
