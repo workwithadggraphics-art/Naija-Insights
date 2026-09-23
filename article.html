@@ -67,8 +67,10 @@
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, orderBy, limit, where, updateDoc, increment, serverTimestamp }
-    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, collection, getDocs,
+addDoc, query, orderBy, limit, where, updateDoc, increment,
+serverTimestamp, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // ─── FIREBASE CONFIG ───
   const firebaseConfig = {
@@ -136,6 +138,34 @@ const articleId = window.articleId;
         updateDoc(docRef, { views: increment(1) }).catch(() => {});
         localStorage.setItem(viewedKey, '1');
       }
+      // Likes
+const likeStorageKey = 'liked_' + articleId;
+const likeBtn = document.getElementById('likeBtn');
+const likeIcon = document.getElementById('likeIcon');
+const likeCountEl = document.getElementById('likeCount');
+
+onSnapshot(docRef, (snap) => {
+  likeCountEl.textContent = snap.data()?.likes || 0;
+});
+
+if (localStorage.getItem(likeStorageKey)) {
+  likeBtn.classList.add('liked');
+  likeIcon.textContent = '❤️';
+  likeBtn.disabled = true;
+}
+
+window.toggleLike = async function () {
+  if (localStorage.getItem(likeStorageKey)) return;
+  try {
+    await updateDoc(docRef, { likes: increment(1) });
+    localStorage.setItem(likeStorageKey, '1');
+    likeBtn.classList.add('liked');
+    likeIcon.textContent = '❤️';
+    likeBtn.disabled = true;
+  } catch (e) {
+    console.error('Like error:', e);
+  }
+};
 
       // Page title & meta
       document.title = `${a.title} — Naija Insights`;
