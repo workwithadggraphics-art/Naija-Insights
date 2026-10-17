@@ -933,5 +933,44 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<!-- Anniversary Popup -->
+<style>
+  .anniversary-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; padding: 16px;
+  }
+  .anniversary-box { position: relative; max-width: 420px; width: 100%; }
+  .anniversary-box img { width: 100%; border-radius: 8px; display: block; }
+  #anniversary-close {
+    position: absolute; top: -40px; right: 0;
+    background: none; border: none; color: #fff;
+    font-size: 28px; cursor: pointer; line-height: 1;
+  }
+</style>
+
+<div id="anniversary-popup" class="anniversary-overlay" style="display:none;">
+  <div class="anniversary-box">
+    <button id="anniversary-close" aria-label="Close">✕</button>
+    <img src="https://i.ibb.co/n81BH3WR/20260927-093806.jpg">
+  </div>
+</div>
+
+<script>
+  (function () {
+    const start = new Date('2026-11-10T00:00:00');
+    const end   = new Date('2026-11-12T00:00:00'); // covers Nov 10 & 11
+    const now = new Date();
+
+    if (now >= start && now < end && !sessionStorage.getItem('anniversaryClosed')) {
+      document.getElementById('anniversary-popup').style.display = 'flex';
+    }
+
+    document.getElementById('anniversary-close').addEventListener('click', function () {
+      document.getElementById('anniversary-popup').style.display = 'none';
+      sessionStorage.setItem('anniversaryClosed', 'true');
+    });
+  })();
+</script>
 </body>
 </html>
