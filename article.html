@@ -190,9 +190,51 @@ window.toggleLike = async function () {
 };
 
       // Page title & meta
-      document.title = `${a.title} — Naija Insights`;
-      document.querySelector('meta[name="description"]').setAttribute('content', a.excerpt || a.title);
+     // Dynamic SEO per article
+document.title = a.title + ' — Naija Insights';
+const articleURL = 'https://naijainsights.vercel.app/article.html?id=' + articleId;
+const desc = a.excerpt || a.title;
+const img = a.imageURL || 'https://iili.io/n98EJ5v.png';
 
+// Basic
+document.querySelector('meta[name="description"]')?.setAttribute('content', desc);
+
+// Open Graph
+setMeta('og:title', a.title + ' — Naija Insights');
+setMeta('og:description', desc);
+setMeta('og:image', img);
+setMeta('og:url', articleURL);
+setMeta('og:type', 'article');
+
+// Twitter
+setMeta('twitter:title', a.title + ' — Naija Insights');
+setMeta('twitter:description', desc);
+setMeta('twitter:image', img);
+
+// Article structured data
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: a.title,
+  description: desc,
+  image: img,
+  author: { '@type': 'Person', name: a.author },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Naija Insights',
+    logo: { '@type': 'ImageObject', url: 'https://iili.io/n98EJ5v.png' }
+  },
+  datePublished: a.createdAt ? new Date(a.createdAt.seconds * 1000).toISOString() : new Date().toISOString(),
+  url: articleURL
+};
+let schemaEl = document.getElementById('articleSchema');
+if (!schemaEl) {
+  schemaEl = document.createElement('script');
+  schemaEl.id = 'articleSchema';
+  schemaEl.type = 'application/ld+json';
+  document.head.appendChild(schemaEl);
+}
+schemaEl.textContent = JSON.stringify(schema);
       // Hero image / cover
       const coverEl = document.getElementById('articleCover');
       if (a.imageURL) {
