@@ -138,6 +138,17 @@ const articleId = window.articleId;
   if (!articleId) {
     location.href = 'index.html';
   }
+ function setMeta(property, content) {
+  let el = document.querySelector(`meta[property="${property}"]`) || 
+           document.querySelector(`meta[name="${property}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    if (property.startsWith('og:')) el.setAttribute('property', property);
+    else el.setAttribute('name', property);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
 
   // ── Load article ──
   async function loadArticle() {
