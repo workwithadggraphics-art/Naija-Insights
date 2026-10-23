@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "naijainsights",
+  "name": "naija-insights-rss",
   "compatibility_date": "2026-05-11",
   "observability": {
     "enabled": true
