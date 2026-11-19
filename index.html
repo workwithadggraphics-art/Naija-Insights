@@ -645,6 +645,47 @@ setTimeout(() => {
   @media (max-width: 1024px) { .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; } .footer-brand { grid-column: 1 / -1; } .cats-grid { grid-template-columns: repeat(3, 1fr); } nav { display: none; } .hamburger { display: flex; } }
   @media (max-width: 768px) { .hero-grid { grid-template-columns: 1fr; } .hero-featured { min-height: 300px; grid-row: auto; } .side-story-img { height: 80px; } .two-col { grid-template-columns: 1fr; } .sidebar { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } .article-grid { grid-template-columns: 1fr; } .cats-grid { grid-template-columns: repeat(2, 1fr); } .footer-top { grid-template-columns: 1fr; gap: 24px; } .footer-bottom { flex-direction: column; gap: 12px; text-align: center; } .values-inner { flex-wrap: wrap; gap: 12px; } .value-item { border-right: none; padding: 8px 16px; } }
   @media (max-width: 480px) { .header-inner { height: 60px; } .logo-name { font-size: 1.05rem; } .logo-tagline { display: none; } .btn-subscribe { display: none; } .sidebar { grid-template-columns: 1fr; } .cats-grid { grid-template-columns: 1fr 1fr; } .footer-bottom-links { flex-wrap: wrap; justify-content: center; } .social-links { display: none; } }
+/* Sticky category bar (mobile/tablet only) */
+.cat-bar {
+  display: none;
+  position: sticky;
+  top: 68px;
+  z-index: 90;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-grey);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.cat-bar-inner {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.cat-bar-inner::-webkit-scrollbar { display: none; }
+.cat-bar-inner a {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mid-grey);
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border-grey);
+  background: transparent;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.cat-bar-inner a:hover { border-color: var(--emerald); color: var(--emerald); }
+.cat-bar-inner a.active {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: #fff;
+}
+@media (max-width: 900px) {
+  .cat-bar { display: block; }
+}
 </style>
 <script type="application/ld+json">
 {
