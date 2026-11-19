@@ -138,6 +138,47 @@
 
   @media(max-width:900px){.video-grid{grid-template-columns:repeat(2,1fr);} nav{display:none;} .hamburger{display:flex;}}
   @media(max-width:560px){.video-grid{grid-template-columns:1fr;} .page-hero h1{font-size:1.8rem;} .footer-bottom{flex-direction:column;gap:10px;} .btn-subscribe{display:none;}}
+/* Sticky category bar (mobile/tablet only) */
+.cat-bar {
+  display: none;
+  position: sticky;
+  top: 68px;
+  z-index: 90;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-grey);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.cat-bar-inner {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.cat-bar-inner::-webkit-scrollbar { display: none; }
+.cat-bar-inner a {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mid-grey);
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border-grey);
+  background: transparent;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.cat-bar-inner a:hover { border-color: var(--emerald); color: var(--emerald); }
+.cat-bar-inner a.active {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: #fff;
+}
+@media (max-width: 900px) {
+  .cat-bar { display: block; }
+}
 </style>
 </head>
 <body>
