@@ -1133,6 +1133,27 @@ if ('serviceWorker' in navigator) {
       .catch(e => console.log('SW failed:', e));
   });
 }
+// Sticky category bar: highlight active chip and sit under the header
+(function() {
+  const bar = document.getElementById('catBar');
+  if (!bar) return;
+  const header = document.querySelector('header');
+  if (header) bar.style.top = header.offsetHeight + 'px';
+
+  const cat = (new URLSearchParams(location.search).get('cat') || '').toLowerCase();
+  const page = location.pathname.toLowerCase();
+  let activeKey = cat;
+  if (!cat && page.includes('exclusives')) activeKey = 'exclusives';
+  if (!cat && page.includes('videos')) activeKey = 'videos';
+
+  bar.querySelectorAll('a').forEach(a => {
+    if (a.dataset.cat === activeKey) {
+      a.classList.add('active');
+      // Scroll the active chip into view
+      a.scrollIntoView({ inline: 'center', block: 'nearest' });
+    }
+  });
+})();
 </script>
 <!-- Anniversary Popup -->
 <style>
