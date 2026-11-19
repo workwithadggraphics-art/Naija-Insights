@@ -241,6 +241,47 @@
 
   @media(max-width:900px){.exc-grid{grid-template-columns:repeat(2,1fr);} nav{display:none;} .hamburger{display:flex;}}
   @media(max-width:560px){.exc-grid{grid-template-columns:1fr;} .page-hero h1{font-size:2rem;} .featured-exclusive{min-height:320px;} .featured-exclusive-content h2{font-size:1.5rem;} .footer-bottom{flex-direction:column;gap:10px;}}
+/* Sticky category bar (mobile/tablet only) */
+.cat-bar {
+  display: none;
+  position: sticky;
+  top: 68px;
+  z-index: 90;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-grey);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.cat-bar-inner {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.cat-bar-inner::-webkit-scrollbar { display: none; }
+.cat-bar-inner a {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--mid-grey);
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border-grey);
+  background: transparent;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.cat-bar-inner a:hover { border-color: var(--emerald); color: var(--emerald); }
+.cat-bar-inner a.active {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: #fff;
+}
+@media (max-width: 900px) {
+  .cat-bar { display: block; }
+}
 </style>
 </head>
 <body>
@@ -265,6 +306,20 @@
     <button class="hamburger" aria-label="Menu" onclick="openNav()"><span></span><span></span><span></span></button>
   </div>
 </header>
+<!-- STICKY CATEGORY BAR -->
+<div class="cat-bar" id="catBar">
+  <div class="cat-bar-inner">
+    <a href="index.html" data-cat="">🏠 All</a>
+    <a href="exclusives.html" data-cat="exclusives">⭐ Exclusives</a>
+    <a href="index.html?cat=Politics" data-cat="politics">🏛️ Politics</a>
+    <a href="index.html?cat=Entertainment" data-cat="entertainment">🎭 Entertainment</a>
+    <a href="index.html?cat=Sports" data-cat="sports">⚽ Sports</a>
+    <a href="index.html?cat=Health" data-cat="health">🏥 Health</a>
+    <a href="index.html?cat=Education" data-cat="education">📚 Education</a>
+    <a href="index.html?cat=Security" data-cat="security">🛡️ Security</a>
+    <a href="videos.html" data-cat="videos">🎬 Videos</a>
+  </div>
+</div>
 
 <div class="mobile-nav" id="mobileNav" onclick="closeNavOutside(event)">
   <div class="mobile-nav-panel">
