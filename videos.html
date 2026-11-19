@@ -200,6 +200,11 @@
 [data-theme="dark"] .coming-soon { background: #1a1a2e; border-color: #2d3748; }
 [data-theme="dark"] footer { background: #0f0f23; }
 </style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+</script>
 </head>
 <body>
 
