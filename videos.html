@@ -179,6 +179,26 @@
 @media (max-width: 900px) {
   .cat-bar { display: block; }
 }
+/* Dark mode */
+[data-theme="dark"] {
+  --white: #1a1a2e;
+  --off-white: #16213e;
+  --ink: #e2e8f0;
+  --mid-grey: #94a3b8;
+  --light-grey: #64748b;
+  --border-grey: #2d3748;
+  --dark-grey: #0f0f23;
+  --emerald-light: rgba(5,150,105,0.15);
+}
+[data-theme="dark"] header { background: #1a1a2e; border-color: #2d3748; }
+[data-theme="dark"] .page-hero { background: #0f0f23; }
+[data-theme="dark"] .mobile-nav-panel { background: #1a1a2e; }
+[data-theme="dark"] .mobile-nav a { color: #94a3b8; }
+[data-theme="dark"] .video-card { border-color: #2d3748; }
+[data-theme="dark"] .filter-tab { background: #1a1a2e; border-color: #2d3748; color: #94a3b8; }
+[data-theme="dark"] .filter-tab.active { background: var(--emerald); border-color: var(--emerald); color: #fff; }
+[data-theme="dark"] .coming-soon { background: #1a1a2e; border-color: #2d3748; }
+[data-theme="dark"] footer { background: #0f0f23; }
 </style>
 </head>
 <body>
