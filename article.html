@@ -592,6 +592,18 @@ if (a.videoURL) {
     border-color: #2d3748;
     background: #1e2a3a;
   }
+  [data-theme="dark"] .cat-bar {
+  background: #1a1a2e;
+  border-color: #2d3748;
+}
+[data-theme="dark"] .cat-bar-inner a {
+  border-color: #2d3748;
+  color: #94a3b8;
+}
+[data-theme="dark"] .cat-bar-inner a.active {
+  background: var(--emerald);
+  color: #fff;
+}
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body { font-family: var(--font-body); background: var(--off-white); color: var(--ink); line-height: 1.7; -webkit-font-smoothing: antialiased; }
